@@ -290,6 +290,15 @@ final class NativeBridge {
         // AVSpeechSynthesizer is retained on self: a deallocated synthesizer
         // stops mid-utterance, so speak through the long-lived instance.
         DispatchQueue.main.async { [self] in
+            // The default audio session (.soloAmbient) is muted by the
+            // silent switch, which swallowed speech entirely (build 8 and
+            // earlier: speak returned success but nothing was audible).
+            // .playback ignores the silent switch; .spokenAudio is the
+            // TTS-tuned mode; duckOthers lowers the run music meanwhile.
+            let session = AVAudioSession.sharedInstance()
+            try? session.setCategory(.playback, mode: .spokenAudio,
+                                     options: [.duckOthers])
+            try? session.setActive(true, options: [])
             synthesizer.speak(utterance)
         }
         replyOK(replyHandler, ["speaking": true])
