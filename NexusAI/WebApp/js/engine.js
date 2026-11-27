@@ -602,6 +602,46 @@
     }
   }
 
+  /* ===== Auto-speak (build 11) ===== */
+  // When the task itself asks for speech, models proved unreliable at
+  // calling speak_say themselves (skipped it, passed template placeholder
+  // text, or took prompt escape hatches). So on successful completion the
+  // app speaks the finished broadcast directly: pick the agent output that
+  // reads as one clean paragraph and hand it to the native speech tool.
+  // No model involvement in the speak step.
+  function pickSpeakText() {
+    const LB = String.fromCharCode(12304), RB = String.fromCharCode(12305);
+    const evRe = new RegExp(LB + 'MCP [\\s\\S]*?' + LB + '/证据' + RB, 'g');
+    let best = '';
+    let bestScore = -1;
+    state.agents.forEach((ag) => {
+      let t = String(ag.output || '');
+      if (!t) return;
+      t = t.replace(evRe, ' ');
+      t = t.replace(/```[\s\S]*?```/g, ' ');
+      t = t.replace(/^#{1,6}\s.*$/gm, ' ');
+      t = t.replace(/\s+/g, ' ').trim();
+      if (t.length < 80 || t.length > 700) return;
+      if (/标题[:：]/.test(t) && /来源[:：]/.test(t)) return; // findings list, not a broadcast
+      if (/核对[:：](完成|未完成)/.test(t)) return; // checker line
+      const score = 100 - Math.abs(260 - t.length) / 10;
+      if (score > bestScore) { bestScore = score; best = t; }
+    });
+    return best;
+  }
+
+  function maybeAutoSpeak(taskText, onLog) {
+    try {
+      if (!(window.Nexus && Nexus.native && Nexus.native.available)) return;
+      if (!/朗读|读出来|念出来|播报/.test(taskText || '')) return;
+      const text = pickSpeakText();
+      if (!text) return;
+      Nexus.native.callTool('speak_say', { text })
+        .then(() => { if (onLog) onLog('SPEAK', '运行完成，已自动朗读最终成果', '#FF9500'); })
+        .catch(() => {});
+    } catch (e) { /* auto-speak must never break a finished run */ }
+  }
+
   async function startPipeline({ taskText, mode, hooks }) {
     if (state.isExecuting) return;
     const { onUpdate, onLog, onToast, onNeedKey } = hooks;
@@ -744,6 +784,7 @@
 
       if (allOk && state.isExecuting) {
         audio.sfx.pipelineSuccess();
+        maybeAutoSpeak(cleanTask, onLog);
       }
     } finally {
       state.isExecuting = false;
