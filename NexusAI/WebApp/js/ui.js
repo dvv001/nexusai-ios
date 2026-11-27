@@ -70,64 +70,96 @@
   }
 
   /* ===== Header & Telemetry Sync ===== */
+  function providerDisplayName() {
+    const p = Object.values(CONST.PROVIDER_PRESETS).find((x) => x.baseUrl === state.api.baseUrl);
+    if (p) return p.name.replace(/\s*官方.*$/, '').replace(/\s*\(.*\)\s*$/, '').trim();
+    return state.api.model || '模型';
+  }
+
   function syncHeaderAndMetrics() {
     const hasKey = Boolean((state.api.apiKey || '').trim());
-    const alertBanner = $('apiAlertBanner');
-    const island = $('dynamicIslandBtn');
-    const dot = $('islandDot');
-    const islandTxt = $('islandText');
-    const subStatus = $('subHeaderStatus');
+    const dot = $('wsStatusDot');
+    const statusTxt = $('wsStatusText');
 
-    if (alertBanner) alertBanner.classList.toggle('hidden', hasKey);
-
-    if (state.isExecuting) {
-      island.classList.add('active-api');
-      dot.className = 'island-dot running';
-      const running = state.agents.filter((a) => a.status === 'running');
-      islandTxt.textContent = running.length > 1
-        ? `量子并发 (${running.map((a) => a.shortName).join('+')})...`
-        : running[0] ? `${running[0].shortName} 正在请求 API...` : '正在调用 API...';
-    } else if (hasKey) {
-      island.classList.remove('active-api');
-      dot.className = 'island-dot ready';
-      islandTxt.textContent = `已就绪 · ${state.api.model}`;
-    } else {
-      island.classList.remove('active-api');
-      dot.className = 'island-dot warn';
-      islandTxt.textContent = '待配置模型 API';
+    if (dot && statusTxt) {
+      if (state.isExecuting) {
+        dot.className = 'dot dot-run';
+        const running = state.agents.filter((a) => a.status === 'running');
+        statusTxt.textContent = running.length > 1
+          ? `并发执行 (${running.map((a) => a.shortName).join('+')})...`
+          : running[0] ? `${running[0].shortName} 正在请求 API...` : '正在调用 API...';
+      } else if (hasKey) {
+        dot.className = 'dot dot-ok';
+        statusTxt.textContent = `${providerDisplayName()} 已连接`;
+      } else {
+        dot.className = 'dot dot-warn';
+        statusTxt.textContent = '待配置模型 API';
+      }
     }
 
-    subStatus.textContent = hasKey
-      ? `当前引擎: ${state.api.model} · Claw 全自动压缩已激活`
-      : '全自动三阶压缩 · 智能路由 · 零感自愈';
-
-    $('headerTokens').textContent = `${state.cumulativeTokens} tok`;
-    $('kpiRealTokens').textContent = state.cumulativeTokens.toLocaleString();
-    $('kpiSavedTokens').textContent = `(省${state.tridentStats.tokensSavedEstimate})`;
-    $('kpiRealLatency').textContent = `${(state.cumulativeLatencyMs / 1000).toFixed(1)}s`;
+    const tokensEl = $('wsStatusTokens');
+    if (tokensEl) tokensEl.textContent = `${state.cumulativeTokens.toLocaleString()} tok`;
 
     const enabledList = state.agents.filter((a) => a.enabled);
     const doneList = enabledList.filter((a) => a.status === 'done');
-    $('kpiDoneAgents').textContent = String(doneList.length);
-    $('kpiEnabledAgents').textContent = String(enabledList.length);
+    const statsEl = $('wsRunStats');
+    if (statsEl) {
+      statsEl.textContent =
+        `已完成 ${doneList.length}/${enabledList.length} 节点 · 消耗 ${state.cumulativeTokens.toLocaleString()} tok（省 ${state.tridentStats.tokensSavedEstimate}）· 耗时 ${(state.cumulativeLatencyMs / 1000).toFixed(1)}s`;
+    }
 
     $('runMissionBtn').classList.toggle('hidden', state.isExecuting);
     $('abortMissionBtn').classList.toggle('hidden', !state.isExecuting);
+
+    renderTopoStatus();
   }
 
   function syncSfxBtnUI() {
-    const btn = $('sfxToggleBtn');
-    if (!btn) return;
-    if (audio.enabled) {
-      btn.textContent = '🔊 音效';
-      btn.className = 'btn btn-ghost btn-sm';
-    } else {
-      btn.textContent = '🔇 静音';
-      btn.className = 'btn btn-muted btn-sm';
-    }
+    const el = $('sfxToggleBtn');
+    if (el) el.checked = Boolean(audio.enabled);
   }
 
-  /* ===== Workspace Pipeline Cards (rAF-throttled in-place stream update) ===== */
+  /* ===== Numbered Agent Badge (replaces emoji avatars everywhere) ===== */
+  function agentBadge(ag, idx, small) {
+    const num = String((idx != null ? idx : state.agents.indexOf(ag)) + 1).padStart(2, '0');
+    const col = util.escHtml(ag.color || '#0071E3');
+    return `<span class="agent-num-badge${small ? ' sm' : ''}" style="background:${col}1A; color:${col}; border-color:${col}55;">${num}</span>`;
+  }
+
+  /* ===== Topology Screen Chrome (subtitle + agent status list) ===== */
+  let lastTopoSig = '';
+  function renderTopoStatus() {
+    const list = $('topoAgentStatus');
+    const sub = $('topoSubtitle');
+    const sq = state.squads.find((s) => s.id === state.activeSquadId);
+    if (sub) {
+      sub.textContent = sq
+        ? `${util.stripDecor(sq.name)} · ${state.agents.length} 名智能体`
+        : `${state.agents.length} 名智能体`;
+    }
+    if (!list) return;
+    const sig = state.activeSquadId + '|' + state.agents.map((a) => a.id + ':' + a.status).join(',');
+    if (sig === lastTopoSig) return;
+    lastTopoSig = sig;
+    const meta = {
+      running: { cls: 'st-running', dot: 'dot-run', label: '运行中' },
+      done: { cls: 'st-done', dot: 'dot-ok', label: '已完成' },
+      error: { cls: 'st-error', dot: 'dot-err', label: '出错' },
+      idle: { cls: 'st-idle', dot: 'dot-idle', label: '待命' }
+    };
+    list.innerHTML = state.agents.map((ag, idx) => {
+      const m = meta[ag.status] || meta.idle;
+      return `
+        <div class="topo-status-row">
+          ${agentBadge(ag, idx, true)}
+          <span class="topo-status-name flex-1 truncate">${util.escHtml(ag.name)}</span>
+          <span class="topo-status-state ${m.cls}"><span class="dot ${m.dot}"></span>${m.label}</span>
+        </div>
+      `;
+    }).join('');
+  }
+
+  /* ===== Workspace Pipeline Rows (rAF-throttled in-place stream update) ===== */
   function updateStreamingAgentInPlace(ag) {
     if (!ag) {
       renderPipelineCards();
@@ -148,7 +180,7 @@
           if (!snip) {
             snip = document.createElement('div');
             snip.className = 'agent-snippet safe-wrap';
-            card.appendChild(snip);
+            (card.querySelector('.log-row-body') || card).appendChild(snip);
           }
           snip.textContent = text;
         }
@@ -165,40 +197,35 @@
     if (!container) return;
     const enabledList = state.agents.filter((a) => a.enabled);
 
-    container.innerHTML = enabledList.map((ag, idx) => {
-      let badge = '<span class="status-pill status-idle">待命</span>';
-      let stateCls = '';
+    container.innerHTML = enabledList.map((ag) => {
+      const idx = state.agents.indexOf(ag);
+      let dotCls = 'dot-idle';
+      let meta = '';
       if (ag.status === 'running') {
-        badge = '<span class="status-pill status-running">● 推理中...</span>';
-        stateCls = 'is-running';
+        dotCls = 'dot-run';
+        meta = '运行中';
       } else if (ag.status === 'done') {
-        const cacheTag = ag.cachedHit ? ' · ⚡秒回' : '';
-        badge = `<span class="status-pill status-done">✔ ${(ag.latencyMs / 1000).toFixed(1)}s · ${ag.tokens}tok${cacheTag}</span>`;
-        stateCls = 'is-done';
+        dotCls = 'dot-ok';
+        meta = `${(ag.latencyMs / 1000).toFixed(1)}s · ${ag.tokens}tok${ag.cachedHit ? ' · 秒回' : ''}`;
       } else if (ag.status === 'error') {
-        badge = '<span class="status-pill status-error">✕ 异常</span>';
-        stateCls = 'is-error';
+        dotCls = 'dot-err';
+        meta = '异常';
       }
 
-      const snippet = ag.output
+      const summary = ag.output
         ? util.escHtml(ag.output.slice(0, 160)) + (ag.output.length > 160 ? '...' : '')
-        : '';
+        : util.escHtml(ag.role);
 
       return `
-        <div data-card-agent="${util.escHtml(ag.id)}" class="agent-card ${stateCls}">
-          <div class="row-between">
-            <div class="row flex-1">
-              <div class="agent-avatar" style="background:${util.escHtml(ag.color)}22; border:1px solid ${util.escHtml(ag.color)}66;">
-                ${util.escHtml(ag.icon)}
-              </div>
-              <div class="flex-1">
-                <div class="agent-name truncate">${idx + 1}. ${util.escHtml(ag.name)}</div>
-                <div class="agent-role truncate">${util.escHtml(ag.role)}</div>
-              </div>
+        <div data-card-agent="${util.escHtml(ag.id)}" class="log-row">
+          <span class="dot ${dotCls}"></span>
+          <div class="log-row-body flex-1">
+            <div class="log-row-top">
+              <span class="log-row-name truncate">${idx + 1}. ${util.escHtml(ag.name)}</span>
+              <span class="log-row-time">${meta}</span>
             </div>
-            ${badge}
+            <div class="agent-snippet safe-wrap">${summary}</div>
           </div>
-          ${snippet ? `<div class="agent-snippet safe-wrap">${snippet}</div>` : ''}
         </div>
       `;
     }).join('');
@@ -206,23 +233,44 @@
 
   /* ===== Squads & Agent Settings ===== */
   function renderSquadBar() {
-    const bar = $('squadBar');
-    if (!bar) return;
-    bar.innerHTML = state.squads.map((sq) => `
+    const html = state.squads.map((sq) => `
       <button type="button" data-squad-id="${util.escHtml(sq.id)}" class="squad-btn ${sq.id === state.activeSquadId ? 'active' : ''}">
-        ${util.escHtml(sq.name)}
+        ${util.escHtml(util.stripDecor(sq.name))}
       </button>
     `).join('');
+    const bar = $('wsSquadChips');
+    if (bar) bar.innerHTML = html;
+  }
+
+  function renderSquadList() {
+    const list = $('squadList');
+    const sub = $('squadScreenSub');
+    if (sub) sub.textContent = `${state.squads.length} 个编队 · 点按查看成员与配置`;
+    if (!list) return;
+    list.innerHTML = state.squads.map((sq) => {
+      const members = sq.agents || [];
+      const desc = members.slice(0, 3).map((a) => a.role || '').filter(Boolean).join('、');
+      return `
+        <button type="button" data-squad-row="${util.escHtml(sq.id)}" class="squad-row ${sq.id === state.activeSquadId ? 'active' : ''}">
+          <span class="flex-1 squad-row-main">
+            <span class="squad-row-name truncate">${util.escHtml(util.stripDecor(sq.name))}</span>
+            <span class="squad-row-desc truncate">${util.escHtml(desc)}</span>
+          </span>
+          <span class="squad-row-count">${members.length} 名成员</span>
+          <span class="chev">›</span>
+        </button>
+      `;
+    }).join('');
   }
 
   function renderAgentSettings() {
     const container = $('agentConfigContainer');
     if (!container) return;
-    container.innerHTML = state.agents.map((ag) => `
-      <div class="cyber-panel stack-sm">
+    container.innerHTML = state.agents.map((ag, idx) => `
+      <div class="card stack-sm">
         <div class="row-between">
           <div class="row flex-1">
-            <span style="font-size: 18px;">${util.escHtml(ag.icon)}</span>
+            ${agentBadge(ag, idx)}
             <div class="flex-1">
               <div class="agent-name truncate">${util.escHtml(ag.name)}</div>
               <div class="agent-role truncate">${util.escHtml(ag.role)}</div>
@@ -243,9 +291,12 @@
   function refreshAfterSquadChange() {
     topology.rebuildPlanes();
     renderSquadBar();
+    renderSquadList();
     renderAgentSettings();
     renderPipelineCards();
     renderLibrary();
+    lastTopoSig = '';
+    renderTopoStatus();
     syncHeaderAndMetrics();
   }
 
@@ -260,7 +311,7 @@
     store.loadSquadIntoRuntime(sq);
     store.saveSquads();
     refreshAfterSquadChange();
-    showToast(`已切换为「${sq.name}」`);
+    showToast(`已切换为「${util.stripDecor(sq.name)}」`);
   }
 
   /* ===== Shared Library UI ===== */
@@ -307,36 +358,47 @@
     return `
       <div class="lib-item-row">
         <div class="flex-1">
-          <div class="agent-name truncate">
+          <div class="lib-item-title truncate">
             ${util.escHtml(item.name)}
-            ${on ? '' : ' <span class="lib-badge-off">（已停用）</span>'}
-            ${kind === 'skill' && item.forceLoad ? ' <span class="lib-badge-force">· 必加载</span>' : ''}
+            ${kind === 'skill' && item.forceLoad ? ' <span class="lib-badge-force">必加载</span>' : ''}
+            ${on ? '' : ' <span class="lib-badge-off">已停用</span>'}
           </div>
-          <div class="agent-role truncate">${util.escHtml(desc)}</div>
-          <div class="agent-role truncate">分配：${util.escHtml(store.getAssignSummary(item))}</div>
+          <div class="lib-item-desc truncate">${util.escHtml(desc)}</div>
+          <div class="lib-item-desc dim truncate">分配：${util.escHtml(store.getAssignSummary(item))}</div>
         </div>
-        <div class="row" style="gap: 4px; flex-shrink: 0;">
-          <button type="button" data-libact="edit" data-kind="${kind}" data-id="${util.escHtml(item.id)}" class="btn btn-ghost btn-xs">编辑</button>
-          <button type="button" data-libact="toggle" data-kind="${kind}" data-id="${util.escHtml(item.id)}" class="btn btn-muted btn-xs">${on ? '停用' : '启用'}</button>
-          <button type="button" data-libact="del" data-kind="${kind}" data-id="${util.escHtml(item.id)}" class="btn btn-danger-soft btn-xs">删</button>
+        <div class="lib-item-side">
+          <button type="button" data-libact="toggle" data-kind="${kind}" data-id="${util.escHtml(item.id)}" class="mini-switch ${on ? 'on' : ''}" role="switch" aria-checked="${on}" aria-label="启用开关"><span class="mini-knob"></span></button>
+          <div class="lib-item-links">
+            <button type="button" data-libact="edit" data-kind="${kind}" data-id="${util.escHtml(item.id)}" class="mini-link">编辑</button>
+            <button type="button" data-libact="del" data-kind="${kind}" data-id="${util.escHtml(item.id)}" class="mini-link danger">删除</button>
+          </div>
         </div>
       </div>
     `;
   }
 
+  let currentLibTab = 'skills';
+  function libCountsText() {
+    if (currentLibTab === 'skills') return `${state.skills.length} 个技能 · 按编队位次生效`;
+    if (currentLibTab === 'mcp') return `${state.mcpServers.length} 个服务器 · 按编队位次生效`;
+    if (currentLibTab === 'inst') return `${state.instructions.length} 条指令 · 按编队位次生效`;
+    return '导出或导入全部技能、MCP、指令与编队配置';
+  }
+
   function renderLibrary() {
     const counts = $('libCounts');
     if (!counts) return;
-    counts.textContent = `${state.skills.length} 技能 · ${state.mcpServers.length} MCP · ${state.instructions.length} 指令`;
+    counts.textContent = libCountsText();
     $('libSkillList').innerHTML = state.skills.length
       ? state.skills.map((s) => libItemRow('skill', s)).join('')
-      : '<p class="panel-subtitle">还没有技能，在下面添加或导入。</p>';
+      : '<p class="lib-empty">还没有技能，在下面添加或导入。</p>';
     $('libMcpList').innerHTML = state.mcpServers.length
       ? state.mcpServers.map((s) => libItemRow('mcp', s)).join('')
-      : '<p class="panel-subtitle">还没有 MCP 服务器，在下面添加。</p>';
+      : '<p class="lib-empty">还没有 MCP 服务器，在下面添加。</p>';
     $('libInstList').innerHTML = state.instructions.length
       ? state.instructions.map((s) => libItemRow('inst', s)).join('')
-      : '<p class="panel-subtitle">还没有指令，在下面添加。</p>';
+      : '<p class="lib-empty">还没有指令，在下面添加。</p>';
+    syncMcpStatusRow();
 
     if (!$('libSkillEditId').value) renderAgentChecks('libSkillAgents', ['all']);
     if (!$('libMcpEditId').value) renderAgentChecks('libMcpAgents', ['all']);
@@ -394,6 +456,7 @@
   }
 
   function switchLibrarySubTab(tab) {
+    currentLibTab = tab;
     const panes = {
       skills: $('libPaneSkills'),
       mcp: $('libPaneMcp'),
@@ -406,6 +469,8 @@
     document.querySelectorAll('[data-libtab]').forEach((btn) => {
       btn.classList.toggle('active', btn.getAttribute('data-libtab') === tab);
     });
+    const counts = $('libCounts');
+    if (counts) counts.textContent = libCountsText();
   }
 
   /* ===== Navigation ===== */
@@ -424,13 +489,12 @@
       btn.classList.toggle('active', btn.getAttribute('data-nav') === tab);
     });
 
-    const hdr = $('mainAppHeader');
     if (tab === 'topology') {
-      if (hdr) hdr.classList.add('hidden');
       topology.setVisible(true);
+      lastTopoSig = '';
+      renderTopoStatus();
     } else {
       if (topology.isImmersion()) topology.exitImmersion();
-      if (hdr) hdr.classList.remove('hidden');
       topology.setVisible(false);
     }
     if (tab === 'library') renderLibrary();
@@ -441,7 +505,12 @@
     const ag = state.agents.find((a) => a.id === agentId);
     if (!ag) return;
     state.inspectedAgentId = ag.id;
-    $('modalAgIcon').textContent = ag.icon;
+    const iconEl = $('modalAgIcon');
+    const idx = state.agents.indexOf(ag);
+    iconEl.textContent = String(idx + 1).padStart(2, '0');
+    iconEl.style.background = `${ag.color}1A`;
+    iconEl.style.color = ag.color;
+    iconEl.style.borderColor = `${ag.color}55`;
     $('modalAgName').textContent = ag.name;
     $('modalAgRole').textContent = ag.role;
     $('modalAgOutput').textContent =
@@ -481,6 +550,18 @@
     squadModalCb = null;
   }
 
+  function syncMcpStatusRow() {
+    const el = $('cfgMcpStatus');
+    if (!el) return;
+    const enabled = state.mcpServers.filter((s) => s.enabled !== false);
+    if (enabled.length) {
+      const extra = enabled.length > 1 ? ` 等 ${enabled.length} 个` : '';
+      el.innerHTML = `<span class="dot dot-ok"></span> ${util.escHtml(enabled[0].name)}${extra} · 已启用`;
+    } else {
+      el.innerHTML = '<span class="dot dot-idle"></span> 未添加';
+    }
+  }
+
   function syncApiFormFromState() {
     $('cfgBaseUrl').value = state.api.baseUrl;
     $('cfgApiKey').value = state.api.apiKey;
@@ -489,6 +570,9 @@
     $('cfgStream').checked = state.api.stream;
     $('cfgCfAccountId').value = state.api.cfAccountId || '';
     $('cfgCfToken').value = state.api.cfToken || '';
+    const provEl = $('cfgProviderName');
+    if (provEl) provEl.textContent = providerDisplayName();
+    syncMcpStatusRow();
 
     document.querySelectorAll('.preset-btn').forEach((btn) => {
       const p = CONST.PROVIDER_PRESETS[btn.getAttribute('data-preset')];
@@ -521,12 +605,13 @@
       switchNavTab(btn.getAttribute('data-nav'));
     });
 
-    $('topConfigApiBtn').addEventListener('click', () => switchNavTab('settings'));
-    $('dynamicIslandBtn').addEventListener('click', () => switchNavTab('settings'));
-    $('bannerConfigBtn').addEventListener('click', () => switchNavTab('settings'));
+    $('wsStatusPill').addEventListener('click', () => {
+      switchNavTab('settings');
+      if (!String(state.api.apiKey || '').trim()) $('cfgApiKey').focus();
+    });
 
-    $('sfxToggleBtn').addEventListener('click', () => {
-      audio.setEnabled(!audio.enabled);
+    $('sfxToggleBtn').addEventListener('change', (e) => {
+      audio.setEnabled(e.target.checked);
       syncSfxBtnUI();
       if (audio.enabled) {
         audio.sfx.nodeCompleteAndCompact();
@@ -534,6 +619,17 @@
       } else {
         showToast('已切换为静音模式');
       }
+    });
+
+    $('toggleAllLogsBtn').addEventListener('click', (e) => {
+      const wrap = $('allLogsWrap');
+      const open = wrap.classList.toggle('hidden') === false;
+      e.currentTarget.textContent = open ? '收起' : '查看全部';
+    });
+
+    $('cfgMcpRow').addEventListener('click', () => {
+      switchNavTab('library');
+      switchLibrarySubTab('mcp');
     });
 
     $('sampleTaskSelect').addEventListener('change', (e) => {
@@ -589,15 +685,24 @@
 
     $('spawnSlipBurstBtn').addEventListener('click', () => {
       topology.burstSlips();
-      showToast('🕷️ 已飘出新工作流字条');
+      showToast('已飘出新工作流字条');
     });
     $('toggleFullImmersionBtn').addEventListener('click', () => topology.toggleImmersion());
 
-    $('squadBar').addEventListener('click', (e) => {
+    const onSquadChipClick = (e) => {
       const btn = e.target.closest('[data-squad-id]');
       if (!btn) return;
       audio.sfx.uiClick();
       switchSquad(btn.getAttribute('data-squad-id'));
+    };
+    const chips = $('wsSquadChips');
+    if (chips) chips.addEventListener('click', onSquadChipClick);
+
+    $('squadList').addEventListener('click', (e) => {
+      const row = e.target.closest('[data-squad-row]');
+      if (!row) return;
+      audio.sfx.uiClick();
+      switchSquad(row.getAttribute('data-squad-row'));
     });
 
     $('agentConfigContainer').addEventListener('click', (e) => {
@@ -627,7 +732,7 @@
     $('newSquadBtn').addEventListener('click', () => {
       if (state.isExecuting) { showToast('任务执行中，请先停止任务再新建编队'); return; }
       openSquadModal({
-        title: '＋ 新建编队',
+        title: '新建编队',
         input: true,
         value: '',
         placeholder: '编队名称（例如：猜生肖小队）',
@@ -641,7 +746,7 @@
             name,
             agents: [{
               id: 'agent-1', code: 'A-01', name: '新成员-01', shortName: '成员',
-              role: '待配置角色', icon: '🤖', color: '#0071E3',
+              role: '待配置角色', icon: '', color: '#0071E3',
               systemPrompt: '（待配置）请把这里改成这个成员的角色、方法与输出格式。', enabled: true
             }]
           };
@@ -733,7 +838,6 @@
       const role = $('addAgRole').value.trim();
       const prompt = $('addAgPrompt').value.trim();
       if (!name || !role || !prompt) return;
-      const icons = ['🚀', '🧬', '🛰️', '🔮'];
       const usedNums = state.agents.map((a) => {
         const m = /(\d+)$/.exec(a.id || '');
         return m ? parseInt(m[1], 10) : 0;
@@ -745,7 +849,7 @@
         name,
         shortName: name.slice(0, 4),
         role,
-        icon: icons[(nextNum - 1) % icons.length],
+        icon: '',
         color: CONST.NEON_PALETTE[(nextNum - 1) % CONST.NEON_PALETTE.length],
         systemPrompt: prompt,
         enabled: true
@@ -764,6 +868,8 @@
         if (!p) return;
         $('cfgBaseUrl').value = p.baseUrl;
         $('cfgModel').value = p.model;
+        const provEl = $('cfgProviderName');
+        if (provEl) provEl.textContent = p.name.replace(/\s*官方.*$/, '').replace(/\s*\(.*\)\s*$/, '').trim();
         document.querySelectorAll('.preset-btn').forEach((b) => b.classList.remove('active'));
         btn.classList.add('active');
         showToast(`已切换为 ${p.name} 预设`);
@@ -786,12 +892,12 @@
           userPrompt: '请简短回复：NexusAI 真实 API 连通正常！'
         });
         banner.className = 'test-banner ok safe-wrap';
-        banner.textContent = `✔ 连通成功！耗时 ${res.latencyMs}ms · 消耗 ${res.tokens} tokens\n回复：${res.content}`;
+        banner.textContent = `连通成功！耗时 ${res.latencyMs}ms · 消耗 ${res.tokens} tokens\n回复：${res.content}`;
         appendLog('API_TEST', `连通性测试通过 (${res.latencyMs}ms)`, '#34C759');
         showToast('API 连通测试成功！');
       } catch (err) {
         banner.className = 'test-banner err safe-wrap';
-        banner.textContent = `✕ 连接失败：${err.message}`;
+        banner.textContent = `连接失败：${err.message}`;
         appendLog('API_ERR', `连通测试失败：${err.message}`, '#FF3B30');
       }
     });
@@ -1095,17 +1201,12 @@
     syncApiFormFromState();
     syncSfxBtnUI();
     renderSquadBar();
+    renderSquadList();
     renderAgentSettings();
     renderPipelineCards();
     renderLibrary();
+    renderTopoStatus();
     syncHeaderAndMetrics();
-
-    const updateClock = () => {
-      const el = $('iosClock');
-      if (el) el.textContent = new Date().toTimeString().slice(0, 5);
-    };
-    updateClock();
-    setInterval(updateClock, 30000);
 
     topology.init(openAgentModal);
     bindEvents();

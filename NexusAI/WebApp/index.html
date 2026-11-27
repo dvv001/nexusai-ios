@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>NexusAI — 量子多智能体协同中枢</title>
+  <title>NexusAI — 多智能体协同中枢</title>
   <link rel="manifest" href="manifest.webmanifest">
   <meta name="theme-color" content="#F5F5F7">
   <meta name="mobile-web-app-capable" content="yes">
@@ -17,245 +17,199 @@
 </head>
 <body>
   <div id="appRootShell" class="app-shell">
-    <!-- ===== Top HUD Header ===== -->
-    <header id="mainAppHeader" class="app-header">
-      <div class="hud-status-row">
-        <span id="iosClock" class="hud-clock">09:41</span>
-        <button id="dynamicIslandBtn" type="button" class="dynamic-island" aria-label="模型 API 状态">
-          <span id="islandDot" class="island-dot warn"></span>
-          <span id="islandText" class="island-text">待配置模型 API</span>
-        </button>
-        <span id="headerTokens" class="hud-tokens">0 tok</span>
-      </div>
-      <div class="hud-brand-row">
-        <div class="brand-group">
-          <div class="brand-emblem" aria-hidden="true">
-            <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M13 2L4 14h7l-1 8 9-12h-7l1-8z"/>
-            </svg>
-          </div>
-          <div class="brand-meta">
-            <div class="brand-title-row">
-              <h1 class="brand-title truncate">NexusAI 协同中枢</h1>
-              <span class="kernel-chip">Claw v20</span>
-            </div>
-            <p id="subHeaderStatus" class="brand-sub truncate">全自动三阶压缩 · 智能路由 · 零感自愈</p>
-          </div>
-        </div>
-        <div class="header-actions">
-          <button id="sfxToggleBtn" type="button" class="btn btn-ghost btn-sm">🔊 音效</button>
-          <button id="topConfigApiBtn" type="button" class="btn btn-muted btn-sm">⚙️ API</button>
-        </div>
-      </div>
-    </header>
-
     <!-- ===== Main Workspace Views ===== -->
     <main class="app-main">
-      <!-- Tab 1: 协同工作台 -->
+      <!-- Tab 1: 工作台 -->
       <section id="tabViewWorkspace" class="tab-section hidden">
-        <div id="apiAlertBanner" class="alert-banner">
-          <div class="alert-text safe-wrap">
-            <strong>尚未填写 API Key：</strong>已默认内置 Claw-Code 全自动引擎，请先配置模型 API Key。
-          </div>
-          <button id="bannerConfigBtn" type="button" class="btn btn-amber btn-sm">去配置</button>
-        </div>
+        <h1 class="screen-title">工作台</h1>
 
-        <!-- Current Squad Summary (read-only mirror of the active squad; populated by the inline script at the end of body) -->
-        <div id="wsSquadCard" class="cyber-panel stack-sm ws-squad-card" style="display:none">
-          <div class="row-between">
-            <span class="ws-squad-label">当前编队</span>
-            <span id="wsSquadCount" class="ws-squad-count"></span>
-          </div>
-          <div id="wsSquadName" class="ws-squad-name truncate"></div>
-          <div id="wsSquadAvatars" class="ws-squad-avatars"></div>
-        </div>
+        <button id="wsStatusPill" type="button" class="status-pill-row" aria-label="模型 API 状态">
+          <span id="wsStatusDot" class="dot dot-warn"></span>
+          <span id="wsStatusText" class="status-pill-text truncate">待配置模型 API</span>
+          <span id="wsStatusTokens" class="status-pill-tokens">0 tok</span>
+        </button>
 
-        <!-- Mission Command Console -->
-        <div class="cyber-panel stack">
-          <div class="row-between">
-            <h2 class="panel-title truncate flex-1">🎯 派发真实任务</h2>
-            <select id="sampleTaskSelect" aria-label="预设真实任务模板" class="field-select" style="width: 148px; flex-shrink: 0;">
-              <option value="">💡 选填测试任务...</option>
-              <option value="设计一套高并发秒杀防超卖系统架构，编写核心 Redis Lua 扣减库存代码，并输出安全边界审计清单">⚡ 高并发秒杀架构+代码+审计</option>
-              <option value="设计一款 iOS 个人 AI 语音笔记 App 的产品架构、核心数据表结构、SwiftUI 录音转写关键代码及商业化方案">📱 iOS AI 语音笔记 App 全案</option>
-              <option value="构建多因子量化选股回测框架，推导夏普比率与最大回撤计算公式，并给出核心 Python 向量化回测代码">📊 量化选股策略与 Python 代码</option>
+        <div class="section-caption">选择编队</div>
+        <div id="wsSquadChips" class="chips-row"></div>
+
+        <div class="card task-card">
+          <textarea id="missionTextarea" rows="3" class="task-textarea no-resize safe-wrap" placeholder="输入任务，交给编队执行..."></textarea>
+          <div class="task-select-row">
+            <select id="sampleTaskSelect" aria-label="预设任务模板" class="row-select">
+              <option value="">选填测试任务...</option>
+              <option value="设计一套高并发秒杀防超卖系统架构，编写核心 Redis Lua 扣减库存代码，并输出安全边界审计清单">高并发秒杀架构+代码+审计</option>
+              <option value="设计一款 iOS 个人 AI 语音笔记 App 的产品架构、核心数据表结构、SwiftUI 录音转写关键代码及商业化方案">iOS AI 语音笔记 App 全案</option>
+              <option value="构建多因子量化选股回测框架，推导夏普比率与最大回撤计算公式，并给出核心 Python 向量化回测代码">量化选股策略与 Python 代码</option>
             </select>
           </div>
-          <textarea id="missionTextarea" rows="3" class="field-textarea no-resize safe-wrap" placeholder="直接输入任务需求，后台自动完成工具路由、Trident 压缩、防漂移注入与异常自愈..."></textarea>
-          <div class="row">
-            <select id="execModeSelect" aria-label="执行链路模式" class="field-select flex-1">
-              <option value="auto_claw">⚡ 全自动 Claw 协同 (压缩+防漂移+自愈)</option>
-              <option value="parallel_fork">🚀 极速并行分叉 (总控→并发→汇总)</option>
-              <option value="fast">⏱️ 精简快速模式 (前3个核心节点)</option>
+          <div class="task-select-row">
+            <select id="execModeSelect" aria-label="执行链路模式" class="row-select">
+              <option value="auto_claw">全自动 Claw 协同 (压缩+防漂移+自愈)</option>
+              <option value="parallel_fork">极速并行分叉 (总控→并发→汇总)</option>
+              <option value="fast">精简快速模式 (前3个核心节点)</option>
             </select>
           </div>
-          <div class="row">
-            <button id="abortMissionBtn" type="button" class="btn btn-danger hidden">⏹ 停止</button>
-            <button id="runMissionBtn" type="button" class="btn btn-primary btn-hero-run">🚀 启动协同</button>
+          <div class="task-actions">
+            <button id="abortMissionBtn" type="button" class="btn btn-danger-soft btn-sm hidden">停止</button>
+            <button id="runMissionBtn" type="button" class="btn btn-primary btn-send">发送</button>
           </div>
         </div>
 
-        <!-- Telemetry KPI Strip -->
-        <div class="grid-3">
-          <div class="kpi-card">
-            <div class="kpi-label truncate">已完成节点</div>
-            <div class="kpi-value kpi-cyan"><span id="kpiDoneAgents">0</span> / <span id="kpiEnabledAgents">5</span></div>
+        <div class="section-head">
+          <h2 class="section-title">运行日志</h2>
+          <div class="section-links">
+            <button id="showReportModalBtn" type="button" class="text-btn">导出报告</button>
+            <button id="toggleAllLogsBtn" type="button" class="text-btn">查看全部</button>
           </div>
-          <div class="kpi-card">
-            <div class="kpi-label truncate">消耗 / 省流</div>
-            <div class="kpi-value kpi-violet truncate">
-              <span id="kpiRealTokens">0</span>
-              <span id="kpiSavedTokens" class="kpi-saved">(省0)</span>
+        </div>
+        <p id="wsRunStats" class="section-meta"></p>
+        <div id="pipelineAgentCards" class="grouped-card"></div>
+
+        <div id="allLogsWrap" class="hidden">
+          <div class="section-head">
+            <h2 class="section-title">调度日志</h2>
+            <button id="clearLogBtn" type="button" class="text-btn">清空</button>
+          </div>
+          <div class="card log-card">
+            <div id="busLogBox" class="log-box safe-wrap">
+              <div class="log-empty">全自动内核待命中。派发任意任务后将自动执行路由、Trident 压缩与 API 推理...</div>
             </div>
-          </div>
-          <div class="kpi-card">
-            <div class="kpi-label truncate">累计耗时</div>
-            <div id="kpiRealLatency" class="kpi-value kpi-lime">0.0s</div>
-          </div>
-        </div>
-
-        <!-- Live Agent Pipeline -->
-        <div class="stack-sm">
-          <div class="row-between" style="padding: 0 2px;">
-            <h2 class="panel-title truncate flex-1">⚡ 智能体实时流水线</h2>
-            <button id="showReportModalBtn" type="button" class="btn btn-ghost btn-xs">📑 完整报告 & 导出</button>
-          </div>
-          <div id="pipelineAgentCards" class="stack-sm"></div>
-        </div>
-
-        <!-- Claw-Code Bus Log -->
-        <div class="cyber-panel stack-sm">
-          <div class="row-between">
-            <span class="panel-title truncate flex-1">🛰️ Claw-Code 内核调度日志</span>
-            <button id="clearLogBtn" type="button" class="btn btn-muted btn-xs">清空</button>
-          </div>
-          <div id="busLogBox" class="log-box safe-wrap">
-            <div class="log-empty">全自动内核待命中。派发任意任务后将自动执行路由、Trident 压缩与 API 推理...</div>
           </div>
         </div>
       </section>
 
       <!-- Tab 2: 全息拓扑 -->
       <section id="tabViewTopology" class="topology-view hidden">
+        <div class="topo-screen-head">
+          <h1 class="screen-title">全息拓扑</h1>
+          <p id="topoSubtitle" class="screen-subtitle"></p>
+        </div>
         <div id="stageCanvasWrap" class="topology-stage">
           <canvas id="stageCanvas"></canvas>
           <div class="topology-controls">
-            <button id="spawnSlipBurstBtn" type="button" class="topo-pill-btn topo-pill-pink">+ 飘字条</button>
-            <button id="toggleFullImmersionBtn" type="button" class="topo-pill-btn topo-pill-cyan">⛶ 全屏</button>
+            <button id="spawnSlipBurstBtn" type="button" class="topo-pill-btn">+ 飘字条</button>
+            <button id="toggleFullImmersionBtn" type="button" class="topo-pill-btn"><span class="topo-btn-label">全屏</span></button>
           </div>
         </div>
+        <div id="topoAgentStatus" class="grouped-card topo-status-card"></div>
       </section>
 
-      <!-- Tab 3: 智能体编队与角色 -->
+      <!-- Tab 3: 编队 -->
       <section id="tabViewAgents" class="tab-section hidden">
-        <div class="cyber-panel stack">
-          <div class="row-between">
-            <div class="flex-1">
-              <h2 class="panel-title">🤖 智能体编队与角色</h2>
-              <p class="panel-subtitle">各编队独立持久化，切换不丢成员与提示词。</p>
-            </div>
-            <button id="openNewAgentBtn" type="button" class="btn btn-cyan btn-sm">＋ 新增 Agent</button>
-          </div>
-          <div id="squadBar" class="row-wrap"></div>
-          <div class="row-wrap">
-            <button id="newSquadBtn" type="button" class="btn btn-cyan btn-xs">＋ 新建编队</button>
-            <button id="dupSquadBtn" type="button" class="btn btn-muted btn-xs">复制当前</button>
-            <button id="renameSquadBtn" type="button" class="btn btn-muted btn-xs">重命名</button>
-            <button id="delSquadBtn" type="button" class="btn btn-danger-soft btn-xs">删除编队</button>
-          </div>
+        <h1 class="screen-title">编队</h1>
+        <p id="squadScreenSub" class="screen-subtitle"></p>
+        <div id="squadList" class="grouped-card"></div>
+        <button id="newSquadBtn" type="button" class="btn btn-tint btn-block">+ 新建编队</button>
+        <div class="row-wrap">
+          <button id="dupSquadBtn" type="button" class="btn btn-muted btn-xs">复制当前</button>
+          <button id="renameSquadBtn" type="button" class="btn btn-muted btn-xs">重命名</button>
+          <button id="delSquadBtn" type="button" class="btn btn-danger-soft btn-xs">删除编队</button>
+        </div>
+        <div class="section-head">
+          <h2 class="section-title">成员与配置</h2>
+          <button id="openNewAgentBtn" type="button" class="text-btn">+ 新增 Agent</button>
         </div>
         <div id="agentConfigContainer" class="stack"></div>
       </section>
 
       <!-- Tab 4: API 设置 -->
       <section id="tabViewSettings" class="tab-section hidden">
-        <div class="cyber-panel stack">
-          <div>
-            <h2 class="panel-title">⚙️ 模型 API 引擎设置</h2>
-            <p class="panel-subtitle">内置 Claw-Code 跨模型自适应层，原生兼容 OpenAI、Anthropic Claude 与推理模型。</p>
-          </div>
-          <div class="field-group">
-            <span class="field-label">一键选择服务商预设</span>
-            <div class="grid-2">
-              <button type="button" data-preset="deepseek" class="preset-btn">🚀 DeepSeek 官方</button>
-              <button type="button" data-preset="deepseek_r1" class="preset-btn">🧠 DeepSeek R1 (推理)</button>
-              <button type="button" data-preset="claude" class="preset-btn">🟣 Anthropic Claude</button>
-              <button type="button" data-preset="siliconflow" class="preset-btn">⚡ 硅基流动 SiliconFlow</button>
-              <button type="button" data-preset="qwen" class="preset-btn">☁️ 阿里百炼 (通义千问)</button>
-              <button type="button" data-preset="openai" class="preset-btn">🌐 OpenAI 官方 / 中转</button>
-              <button type="button" data-preset="kimi" class="preset-btn">🌙 月之暗面 Kimi</button>
-              <button type="button" data-preset="gemini" class="preset-btn">✨ Google Gemini</button>
-            </div>
-          </div>
+        <h1 class="screen-title">API 设置</h1>
 
-          <div class="field-group">
-            <label class="field-label" for="cfgBaseUrl">接口地址 (Endpoint URL)</label>
-            <input id="cfgBaseUrl" type="url" class="field-input mono" value="https://api.deepseek.com/v1/chat/completions">
+        <div class="section-caption">模型服务</div>
+        <div class="grouped-card">
+          <div class="setting-row">
+            <span class="setting-label">服务商</span>
+            <span id="cfgProviderName" class="setting-value">DeepSeek</span>
           </div>
-          <div class="field-group">
-            <label class="field-label" for="cfgApiKey">API Key (必填，仅存本机)</label>
-            <input id="cfgApiKey" type="password" class="field-input mono" placeholder="sk-...">
+          <div class="preset-grid">
+            <button type="button" data-preset="deepseek" class="preset-btn">DeepSeek 官方</button>
+            <button type="button" data-preset="deepseek_r1" class="preset-btn">DeepSeek R1 (推理)</button>
+            <button type="button" data-preset="claude" class="preset-btn">Anthropic Claude</button>
+            <button type="button" data-preset="siliconflow" class="preset-btn">硅基流动 SiliconFlow</button>
+            <button type="button" data-preset="qwen" class="preset-btn">阿里百炼 (通义千问)</button>
+            <button type="button" data-preset="openai" class="preset-btn">OpenAI 官方 / 中转</button>
+            <button type="button" data-preset="kimi" class="preset-btn">月之暗面 Kimi</button>
+            <button type="button" data-preset="gemini" class="preset-btn">Google Gemini</button>
           </div>
-
-          <div class="grid-2">
-            <div class="field-group">
-              <label class="field-label" for="cfgModel">模型名称 (Model)</label>
-              <input id="cfgModel" type="text" class="field-input mono" value="deepseek-chat">
-            </div>
-            <div class="field-group">
-              <label class="field-label" for="cfgTemp">温度 (Temperature)</label>
-              <input id="cfgTemp" type="number" step="0.05" min="0" max="2" class="field-input mono" value="0.3">
-            </div>
+          <div class="setting-row">
+            <label class="setting-label" for="cfgBaseUrl">接口地址</label>
+            <input id="cfgBaseUrl" type="url" class="row-input mono" value="https://api.deepseek.com/v1/chat/completions">
           </div>
-
-          <label class="checkbox-row">
-            <input id="cfgStream" type="checkbox" checked>
-            <span>启用 SSE 实时流式输出（边推理边实时渲染）</span>
-          </label>
-
-          <hr class="divider">
-
-          <div class="field-group">
-            <label class="field-label" for="cfgCfAccountId">Cloudflare Account ID（可选 · Kitesurf 联网抓取）</label>
-            <input id="cfgCfAccountId" type="text" class="field-input mono" placeholder="Cloudflare 账号 ID">
+          <div class="setting-row">
+            <label class="setting-label" for="cfgApiKey">API 密钥</label>
+            <input id="cfgApiKey" type="password" class="row-input mono" placeholder="sk-...">
           </div>
-          <div class="field-group">
-            <label class="field-label" for="cfgCfToken">Cloudflare API Token（Browser Rendering 权限）</label>
-            <input id="cfgCfToken" type="password" class="field-input mono" placeholder="仅存本机浏览器，勿外传">
+          <div class="setting-row">
+            <label class="setting-label" for="cfgModel">模型</label>
+            <input id="cfgModel" type="text" class="row-input mono" value="deepseek-chat">
           </div>
-
-          <p id="nativeBridgeStatus" class="panel-subtitle"></p>
-
-          <div class="row" style="padding-top: 4px;">
-            <button id="saveCfgBtn" type="button" class="btn btn-primary btn-block">💾 保存配置</button>
-            <button id="testCfgBtn" type="button" class="btn btn-ghost btn-block">🔌 测试连通性</button>
+          <div class="setting-row">
+            <label class="setting-label" for="cfgTemp">温度</label>
+            <input id="cfgTemp" type="number" step="0.05" min="0" max="2" class="row-input mono row-input-num" value="0.3">
           </div>
-          <div id="testResultBanner" class="test-banner info safe-wrap hidden"></div>
+          <div class="setting-row">
+            <span class="setting-label">流式输出</span>
+            <label class="switch">
+              <input id="cfgStream" type="checkbox" checked>
+              <span class="switch-track"></span>
+            </label>
+          </div>
         </div>
+        <p class="footnote">密钥仅保存在本机，不会上传到任何服务器。</p>
+
+        <div class="section-caption">扩展服务</div>
+        <div class="grouped-card">
+          <button id="cfgMcpRow" type="button" class="setting-row setting-row-btn">
+            <span class="setting-label">MCP 服务器</span>
+            <span id="cfgMcpStatus" class="setting-value"></span>
+            <span class="chev">›</span>
+          </button>
+          <div class="setting-row">
+            <label class="setting-label" for="cfgCfAccountId">Cloudflare 账号</label>
+            <input id="cfgCfAccountId" type="text" class="row-input mono" placeholder="账号 ID（Kitesurf 抓取）">
+          </div>
+          <div class="setting-row">
+            <label class="setting-label" for="cfgCfToken">Cloudflare 令牌</label>
+            <input id="cfgCfToken" type="password" class="row-input mono" placeholder="仅存本机，勿外传">
+          </div>
+        </div>
+        <p id="nativeBridgeStatus" class="footnote"></p>
+
+        <div class="section-caption">偏好</div>
+        <div class="grouped-card">
+          <div class="setting-row">
+            <span class="setting-label">音效</span>
+            <label class="switch">
+              <input id="sfxToggleBtn" type="checkbox">
+              <span class="switch-track"></span>
+            </label>
+          </div>
+        </div>
+
+        <div class="row" style="padding-top: 4px;">
+          <button id="saveCfgBtn" type="button" class="btn btn-primary btn-block">保存配置</button>
+          <button id="testCfgBtn" type="button" class="btn btn-ghost btn-block">测试连通性</button>
+        </div>
+        <div id="testResultBanner" class="test-banner info safe-wrap hidden"></div>
       </section>
 
-      <!-- Tab 5: 共享扩展库（分层子标签，无冗余长滚动） -->
+      <!-- Tab 5: 扩展库 -->
       <section id="tabViewLibrary" class="tab-section hidden">
-        <div class="cyber-panel stack-sm">
-          <div class="row-between">
-            <h2 class="panel-title">📚 共享扩展库</h2>
-            <span id="libCounts" class="mono" style="font-size: 11px; color: var(--neon-cyan);"></span>
-          </div>
-          <p class="panel-subtitle">维护一份、按编队位次全线生效；默认只注名录省 Token，设为「必加载」则全文直注。</p>
-          <div class="seg-tabs" role="tablist">
-            <button type="button" data-libtab="skills" class="seg-btn active">✨ 技能</button>
-            <button type="button" data-libtab="mcp" class="seg-btn">🔌 MCP</button>
-            <button type="button" data-libtab="inst" class="seg-btn">📜 指令</button>
-            <button type="button" data-libtab="io" class="seg-btn">⇄ 备份</button>
-          </div>
+        <h1 class="screen-title">扩展库</h1>
+        <div class="seg-tabs" role="tablist">
+          <button type="button" data-libtab="skills" class="seg-btn active">技能</button>
+          <button type="button" data-libtab="mcp" class="seg-btn">MCP</button>
+          <button type="button" data-libtab="inst" class="seg-btn">指令</button>
+          <button type="button" data-libtab="io" class="seg-btn">备份</button>
         </div>
+        <p id="libCounts" class="count-line"></p>
 
         <!-- Library Sub-tab: Skills -->
-        <div id="libPaneSkills" class="cyber-panel stack">
-          <h3 class="panel-title">✨ 技能库（Skills）</h3>
-          <div id="libSkillList" class="stack-sm"></div>
-          <hr class="divider">
-          <div class="stack-sm">
+        <div id="libPaneSkills" class="stack">
+          <div id="libSkillList" class="grouped-card lib-list"></div>
+          <div class="section-caption">新增技能</div>
+          <div class="card stack-sm">
             <input id="libSkillName" type="text" class="field-input" placeholder="技能名（智能体用 [[SKILL:技能名]] 加载）">
             <input id="libSkillDesc" type="text" class="field-input" placeholder="一句话描述（进名录，帮智能体判断何时用）">
             <textarea id="libSkillBody" rows="5" class="field-textarea mono" placeholder="技能正文：规程、清单、模板等；也可直接粘整份 SKILL.md 后点击下方拆解导入。"></textarea>
@@ -269,8 +223,8 @@
             </label>
             <input id="libSkillEditId" type="hidden">
             <div class="row">
-              <button id="libSkillSaveBtn" type="button" class="btn btn-primary btn-block">💾 保存技能</button>
-              <button id="libSkillPasteBtn" type="button" class="btn btn-muted btn-block">📋 拆解 SKILL.md</button>
+              <button id="libSkillSaveBtn" type="button" class="btn btn-primary btn-block">保存技能</button>
+              <button id="libSkillPasteBtn" type="button" class="btn btn-muted btn-block">拆解 SKILL.md</button>
               <button id="libSkillCancelBtn" type="button" class="btn btn-muted btn-sm hidden">取消</button>
             </div>
             <div class="row">
@@ -286,11 +240,10 @@
         </div>
 
         <!-- Library Sub-tab: MCP -->
-        <div id="libPaneMcp" class="cyber-panel stack hidden">
-          <h3 class="panel-title">🔌 MCP 服务器（Streamable HTTP）</h3>
-          <div id="libMcpList" class="stack-sm"></div>
-          <hr class="divider">
-          <div class="stack-sm">
+        <div id="libPaneMcp" class="stack hidden">
+          <div id="libMcpList" class="grouped-card lib-list"></div>
+          <div class="section-caption">新增服务器</div>
+          <div class="card stack-sm">
             <input id="libMcpName" type="text" class="field-input" placeholder="服务器名（智能体用 [[MCP:服务器名:工具名:{参数}]] 调用）">
             <input id="libMcpUrl" type="text" class="field-input mono" placeholder="服务器地址（https://...，Streamable HTTP 类 MCP）">
             <input id="libMcpToken" type="password" class="field-input mono" placeholder="访问令牌（可选，仅存本机浏览器）">
@@ -300,21 +253,20 @@
             </div>
             <input id="libMcpEditId" type="hidden">
             <div class="row">
-              <button id="libMcpSaveBtn" type="button" class="btn btn-primary btn-block">💾 保存服务器</button>
-              <button id="libMcpTestBtn" type="button" class="btn btn-ghost btn-block">🔌 测试连接</button>
+              <button id="libMcpSaveBtn" type="button" class="btn btn-primary btn-block">保存服务器</button>
+              <button id="libMcpTestBtn" type="button" class="btn btn-ghost btn-block">测试连接</button>
               <button id="libMcpCancelBtn" type="button" class="btn btn-muted btn-sm hidden">取消</button>
             </div>
-            <p class="panel-subtitle">经 hghub-proxy 的 /mcp 中继转发；本机 stdio 型 MCP 网页端无法直连。</p>
+            <p class="panel-subtitle">直连目标服务器（Streamable HTTP）；本机 stdio 型 MCP 网页端无法直连。</p>
             <p id="libMcpMsg" class="panel-subtitle safe-wrap"></p>
           </div>
         </div>
 
         <!-- Library Sub-tab: Instructions -->
-        <div id="libPaneInst" class="cyber-panel stack hidden">
-          <h3 class="panel-title">📜 共享指令（Instructions）</h3>
-          <div id="libInstList" class="stack-sm"></div>
-          <hr class="divider">
-          <div class="stack-sm">
+        <div id="libPaneInst" class="stack hidden">
+          <div id="libInstList" class="grouped-card lib-list"></div>
+          <div class="section-caption">新增指令</div>
+          <div class="card stack-sm">
             <input id="libInstName" type="text" class="field-input" placeholder="指令名（如：团队代码风格）">
             <textarea id="libInstText" rows="4" class="field-textarea" placeholder="指令正文：将原样注入被分配智能体的上下文"></textarea>
             <div class="field-group">
@@ -323,49 +275,50 @@
             </div>
             <input id="libInstEditId" type="hidden">
             <div class="row">
-              <button id="libInstSaveBtn" type="button" class="btn btn-primary btn-block">💾 保存指令</button>
+              <button id="libInstSaveBtn" type="button" class="btn btn-primary btn-block">保存指令</button>
               <button id="libInstCancelBtn" type="button" class="btn btn-muted btn-sm hidden">取消</button>
             </div>
           </div>
         </div>
 
         <!-- Library Sub-tab: Import / Export -->
-        <div id="libPaneIo" class="cyber-panel stack hidden">
-          <h3 class="panel-title">⇄ 扩展库与编队备份</h3>
-          <p class="panel-subtitle">一键导出或导入全部技能、MCP 服务器、共享指令与智能体编队（不含 API Key）。</p>
-          <div class="row">
-            <button id="libExportBtn" type="button" class="btn btn-ghost btn-block">⬆️ 生成导出 JSON</button>
-            <button id="libImportBtn" type="button" class="btn btn-muted btn-block">⬇️ 准备导入</button>
-          </div>
-          <textarea id="libIoText" rows="7" class="field-textarea mono" placeholder="导出时 JSON 会出现在这里；导入时把 JSON 粘贴到这里"></textarea>
-          <div class="row">
-            <button id="libIoDoImportBtn" type="button" class="btn btn-primary btn-block">执行合并导入</button>
-            <button id="libIoCopyBtn" type="button" class="btn btn-ghost btn-block">复制 JSON</button>
+        <div id="libPaneIo" class="stack hidden">
+          <div class="card stack-sm">
+            <p class="panel-subtitle" style="margin: 0;">一键导出或导入全部技能、MCP 服务器、共享指令与智能体编队（不含 API Key）。</p>
+            <div class="row">
+              <button id="libExportBtn" type="button" class="btn btn-ghost btn-block">生成导出 JSON</button>
+              <button id="libImportBtn" type="button" class="btn btn-muted btn-block">准备导入</button>
+            </div>
+            <textarea id="libIoText" rows="7" class="field-textarea mono" placeholder="导出时 JSON 会出现在这里；导入时把 JSON 粘贴到这里"></textarea>
+            <div class="row">
+              <button id="libIoDoImportBtn" type="button" class="btn btn-primary btn-block">执行合并导入</button>
+              <button id="libIoCopyBtn" type="button" class="btn btn-ghost btn-block">复制 JSON</button>
+            </div>
           </div>
         </div>
       </section>
     </main>
 
-    <!-- ===== Bottom iOS Sci-Fi Navigation Dock ===== -->
+    <!-- ===== Bottom Navigation Dock (line icons) ===== -->
     <nav id="bottomNavBar" class="ios-dock" aria-label="主导航">
       <button type="button" data-nav="workspace" class="dock-btn">
-        <span class="dock-icon">⚡</span>
+        <span class="dock-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="7" height="7" rx="2"/><rect x="13" y="4" width="7" height="7" rx="2"/><rect x="4" y="13" width="7" height="7" rx="2"/><rect x="13" y="13" width="7" height="7" rx="2"/></svg></span>
         <span class="dock-label">工作台</span>
       </button>
       <button type="button" data-nav="topology" class="dock-btn active">
-        <span class="dock-icon">🛸</span>
-        <span class="dock-label">全息拓扑</span>
+        <span class="dock-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="2.4" fill="currentColor" stroke="none"/></svg></span>
+        <span class="dock-label">拓扑</span>
       </button>
       <button type="button" data-nav="agents" class="dock-btn">
-        <span class="dock-icon">🤖</span>
+        <span class="dock-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="12" r="5.5"/><circle cx="16.5" cy="12" r="5.5"/></svg></span>
         <span class="dock-label">编队</span>
       </button>
       <button type="button" data-nav="settings" class="dock-btn">
-        <span class="dock-icon">⚙️</span>
-        <span class="dock-label">API设置</span>
+        <span class="dock-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h9M17.5 7H20M4 12h2.5M10.5 12H20M4 17h11M19 17h1"/><circle cx="15" cy="7" r="2.2"/><circle cx="8.5" cy="12" r="2.2"/><circle cx="17" cy="17" r="2.2"/></svg></span>
+        <span class="dock-label">设置</span>
       </button>
       <button type="button" data-nav="library" class="dock-btn">
-        <span class="dock-icon">📚</span>
+        <span class="dock-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 6h14M5 12h14M5 18h9"/></svg></span>
         <span class="dock-label">扩展库</span>
       </button>
     </nav>
@@ -376,7 +329,7 @@
     <div class="modal-sheet">
       <div class="modal-header">
         <div class="row flex-1">
-          <span id="modalAgIcon" style="font-size: 20px;">🧠</span>
+          <span id="modalAgIcon" class="agent-num-badge">01</span>
           <div class="flex-1">
             <h3 id="modalAgName" class="panel-title truncate">Nexus-01 架构总控</h3>
             <p id="modalAgRole" class="panel-subtitle truncate" style="margin-top: 1px;">全局任务拆解与技术纲要</p>
@@ -384,7 +337,7 @@
         </div>
         <div class="row" style="gap: 6px;">
           <button id="copyAgOutBtn" type="button" class="btn btn-ghost btn-xs">复制产出</button>
-          <button id="closeAgModalBtn" type="button" class="btn btn-muted btn-xs" aria-label="关闭">✕</button>
+          <button id="closeAgModalBtn" type="button" class="btn btn-muted btn-xs" aria-label="关闭"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M5 5l14 14M19 5L5 19"/></svg></button>
         </div>
       </div>
       <div id="modalAgOutput" class="modal-terminal safe-wrap"></div>
@@ -399,12 +352,12 @@
   <div id="reportModal" class="modal-backdrop hidden" role="dialog" aria-modal="true">
     <div class="modal-sheet">
       <div class="modal-header">
-        <h3 class="panel-title truncate flex-1">📑 多智能体交付汇总报告</h3>
+        <h3 class="panel-title truncate flex-1">多智能体交付汇总报告</h3>
         <div class="row" style="gap: 5px;">
           <button id="copyReportBtn" type="button" class="btn btn-ghost btn-xs">复制</button>
           <button id="downloadReportBtn" type="button" class="btn btn-cyan btn-xs">.md</button>
           <button id="downloadJsonReportBtn" type="button" class="btn btn-violet-soft btn-xs">.json</button>
-          <button id="closeReportModalBtn" type="button" class="btn btn-muted btn-xs" aria-label="关闭">✕</button>
+          <button id="closeReportModalBtn" type="button" class="btn btn-muted btn-xs" aria-label="关闭"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M5 5l14 14M19 5L5 19"/></svg></button>
         </div>
       </div>
       <div id="reportModalContent" class="modal-terminal safe-wrap"></div>
@@ -428,8 +381,8 @@
   <div id="newAgentModal" class="modal-backdrop centered hidden" role="dialog" aria-modal="true">
     <div class="modal-sheet">
       <div class="modal-header">
-        <h3 class="panel-title">＋ 新增专职智能体节点</h3>
-        <button id="closeNewAgentModalBtn" type="button" class="btn btn-muted btn-xs" aria-label="关闭">✕</button>
+        <h3 class="panel-title">新增专职智能体节点</h3>
+        <button id="closeNewAgentModalBtn" type="button" class="btn btn-muted btn-xs" aria-label="关闭"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M5 5l14 14M19 5L5 19"/></svg></button>
       </div>
       <form id="newAgentForm" class="stack">
         <div class="field-group">
@@ -454,7 +407,6 @@
 
   <!-- ===== Floating Toast ===== -->
   <div id="toastBanner" class="toast-banner hidden" role="status" aria-live="polite">
-    <span class="toast-icon">✦</span>
     <span id="toastText">已保存</span>
   </div>
 
@@ -466,46 +418,5 @@
   <script src="js/engine.js"></script>
   <script src="js/topology.js"></script>
   <script src="js/ui.js"></script>
-  <!-- ===== Workspace Squad Mirror (v22, read-only: renders the active squad summary card from localStorage; never writes) ===== -->
-  <script>
-  (function () {
-    var card = document.getElementById('wsSquadCard');
-    if (!card) return;
-    var lastKey = '';
-    function esc(v) {
-      return String(v == null ? '' : v).replace(/[&<>"']/g, function (c) {
-        return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
-      });
-    }
-    function render() {
-      try {
-        var squads = JSON.parse(localStorage.getItem('nexusai_squads') || '[]');
-        var activeId = localStorage.getItem('nexusai_active_squad') || '';
-        if (!Array.isArray(squads) || !squads.length) { card.style.display = 'none'; lastKey = ''; return; }
-        var sq = null;
-        for (var i = 0; i < squads.length; i++) { if (squads[i].id === activeId) { sq = squads[i]; break; } }
-        if (!sq) sq = squads[0];
-        var agents = Array.isArray(sq.agents) ? sq.agents : [];
-        var key = String(sq.id) + '|' + String(sq.name) + '|' + agents.length;
-        if (key === lastKey && card.style.display !== 'none') return;
-        lastKey = key;
-        document.getElementById('wsSquadName').textContent = sq.name || '未命名编队';
-        document.getElementById('wsSquadCount').textContent = agents.length + ' 个智能体';
-        document.getElementById('wsSquadAvatars').innerHTML = agents.slice(0, 8).map(function (ag) {
-          var col = /^#[0-9a-fA-F]{3,8}$/.test(ag.color || '') ? ag.color : '#0071E3';
-          return '<span class="ws-avatar" style="background:' + col + '22;border:1px solid ' + col + '66" title="' + esc(ag.name || '') + '">' + esc(ag.icon || '🤖') + '</span>';
-        }).join('');
-        card.style.display = '';
-      } catch (e) { card.style.display = 'none'; }
-    }
-    card.addEventListener('click', function () {
-      var b = document.querySelector('[data-nav="agents"]');
-      if (b) b.click();
-    });
-    render();
-    document.addEventListener('visibilitychange', render);
-    setInterval(render, 2000);
-  })();
-  </script>
 </body>
 </html>

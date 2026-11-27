@@ -110,7 +110,7 @@
     const paint = () => {
       const el = document.getElementById('nativeBridgeStatus');
       if (el) {
-        el.textContent = '📱 本机能力已启用：日历 · 提醒事项 · 通知 · 语音朗读（智能体可通过「本机能力」工具调用）';
+        el.textContent = '本机能力已启用：日历 · 提醒事项 · 通知 · 语音朗读（智能体可通过「本机能力」工具调用）';
       }
     };
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', paint);

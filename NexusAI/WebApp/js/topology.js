@@ -381,16 +381,32 @@
       const btnY = y + (hdrH - btnH) * 0.5;
       plane.detailBtnRect = { x: btnX, y: btnY, w: btnW, h: btnH };
 
+      // Numbered node badge (draft style: numbered circle, accent-filled while running)
+      const badgeCx = x + 14;
+      const badgeCy = y + hdrH * 0.52;
+      ctx.beginPath();
+      ctx.arc(badgeCx, badgeCy, 8, 0, Math.PI * 2);
+      ctx.fillStyle = isRunning ? themeColor : '#FFFFFF';
+      ctx.fill();
+      ctx.strokeStyle = themeColor;
+      ctx.lineWidth = 1.1;
+      ctx.stroke();
+      ctx.font = '700 8.5px -apple-system, Inter, sans-serif';
+      ctx.fillStyle = isRunning ? '#FFFFFF' : '#1D1D1F';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(String(pIdx + 1).padStart(2, '0'), badgeCx, badgeCy + 0.3);
+
       // Clipped header title so long names never collide with button
       ctx.save();
       ctx.beginPath();
-      ctx.rect(x + 5, y + 1, Math.max(20, btnX - x - 9), hdrH - 2);
+      ctx.rect(x + 25, y + 1, Math.max(20, btnX - x - 29), hdrH - 2);
       ctx.clip();
       ctx.font = '700 10.5px -apple-system, Inter, sans-serif';
       ctx.fillStyle = '#1D1D1F';
       ctx.textAlign = 'left';
       ctx.textBaseline = 'middle';
-      ctx.fillText(`${ag.icon} ${ag.name}`, x + 7, y + hdrH * 0.52);
+      ctx.fillText(`${ag.name}`, x + 27, y + hdrH * 0.52);
       ctx.restore();
 
       // Detail / Status button
@@ -404,7 +420,7 @@
       ctx.fillStyle = isRunning ? '#FFFFFF' : isDone ? '#248A3D' : '#3A3A3C';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.fillText(isRunning ? '执行中' : isDone ? '✔完成' : '详情 ›', btnX + btnW * 0.5, btnY + btnH * 0.52);
+      ctx.fillText(isRunning ? '执行中' : isDone ? '已完成' : '详情 ›', btnX + btnW * 0.5, btnY + btnH * 0.52);
       ctx.restore();
 
       // Animate floating keyword slips
@@ -631,7 +647,11 @@
     const btn = document.getElementById('toggleFullImmersionBtn');
     if (topoSec) topoSec.classList.toggle('immersion', fullImmersionMode);
     if (navBar) navBar.classList.toggle('hidden', fullImmersionMode);
-    if (btn) btn.textContent = fullImmersionMode ? '⛶ 退出全屏' : '⛶ 全屏';
+    if (btn) {
+      const lbl = btn.querySelector('.topo-btn-label');
+      if (lbl) lbl.textContent = fullImmersionMode ? '退出全屏' : '全屏';
+      else btn.textContent = fullImmersionMode ? '退出全屏' : '全屏';
+    }
     setTimeout(resize, 35);
     return fullImmersionMode;
   }
