@@ -632,13 +632,6 @@
       switchLibrarySubTab('mcp');
     });
 
-    $('sampleTaskSelect').addEventListener('change', (e) => {
-      if (e.target.value) {
-        $('missionTextarea').value = e.target.value;
-        e.target.value = '';
-      }
-    });
-
     $('runMissionBtn').addEventListener('click', () => {
       if (state.isDirectChatting) {
         showToast('正在进行单节点追问，请稍候完成后再启动全局协同');
@@ -646,7 +639,6 @@
       }
       engine.startPipeline({
         taskText: $('missionTextarea').value,
-        mode: $('execModeSelect').value,
         hooks: {
           onUpdate: (ag) => {
             if (ag && ag.status === 'running' && ag.output) {
@@ -683,10 +675,6 @@
       $('busLogBox').innerHTML = '<div class="log-empty">日志已清空。等待真实 API 调用...</div>';
     });
 
-    $('spawnSlipBurstBtn').addEventListener('click', () => {
-      topology.burstSlips();
-      showToast('已飘出新工作流字条');
-    });
     $('toggleFullImmersionBtn').addEventListener('click', () => topology.toggleImmersion());
 
     const onSquadChipClick = (e) => {

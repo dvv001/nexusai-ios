@@ -34,21 +34,6 @@
 
         <div class="card task-card">
           <textarea id="missionTextarea" rows="3" class="task-textarea no-resize safe-wrap" placeholder="输入任务，交给编队执行..."></textarea>
-          <div class="task-select-row">
-            <select id="sampleTaskSelect" aria-label="预设任务模板" class="row-select">
-              <option value="">选填测试任务...</option>
-              <option value="设计一套高并发秒杀防超卖系统架构，编写核心 Redis Lua 扣减库存代码，并输出安全边界审计清单">高并发秒杀架构+代码+审计</option>
-              <option value="设计一款 iOS 个人 AI 语音笔记 App 的产品架构、核心数据表结构、SwiftUI 录音转写关键代码及商业化方案">iOS AI 语音笔记 App 全案</option>
-              <option value="构建多因子量化选股回测框架，推导夏普比率与最大回撤计算公式，并给出核心 Python 向量化回测代码">量化选股策略与 Python 代码</option>
-            </select>
-          </div>
-          <div class="task-select-row">
-            <select id="execModeSelect" aria-label="执行链路模式" class="row-select">
-              <option value="auto_claw">全自动 Claw 协同 (压缩+防漂移+自愈)</option>
-              <option value="parallel_fork">极速并行分叉 (总控→并发→汇总)</option>
-              <option value="fast">精简快速模式 (前3个核心节点)</option>
-            </select>
-          </div>
           <div class="task-actions">
             <button id="abortMissionBtn" type="button" class="btn btn-danger-soft btn-sm hidden">停止</button>
             <button id="runMissionBtn" type="button" class="btn btn-primary btn-send">发送</button>
@@ -87,7 +72,6 @@
         <div id="stageCanvasWrap" class="topology-stage">
           <canvas id="stageCanvas"></canvas>
           <div class="topology-controls">
-            <button id="spawnSlipBurstBtn" type="button" class="topo-pill-btn">+ 飘字条</button>
             <button id="toggleFullImmersionBtn" type="button" class="topo-pill-btn"><span class="topo-btn-label">全屏</span></button>
           </div>
         </div>

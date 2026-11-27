@@ -186,6 +186,63 @@
     return { routes, blocked };
   }
 
+  /* ===== Smart Exec-Mode Routing (hidden — replaces the manual mode picker) =====
+     The engine picks the execution mode itself per task. Heuristic is
+     deterministic and conservative: when in doubt, fall back to the full
+     sequential Claw pipeline (auto_claw). */
+  const EXEC_MODES = {
+    auto_claw: '全自动 Claw 协同',
+    parallel_fork: '极速并行分叉',
+    fast: '精简快速模式'
+  };
+
+  // Distinct workstream domains a task can touch; ≥2 of them in one task
+  // usually means independent sub-deliverables that can fork in parallel.
+  const ROUTE_DOMAIN_PATTERNS = [
+    /(架构|系统设计|拆解|方案|蓝图|规划|全案|拓扑)/, // planning / architecture
+    /(代码|实现|编写|开发|脚本|函数|接口|算法|python|swift|java|redis|lua|sql)/i, // build / code
+    /(安全|审计|漏洞|压测|风险|加固|渗透|合规)/, // security / audit
+    /(调研|对比|选型|分析|研究|评估|回测|量化|统计)/, // research / analysis
+    /(产品|商业|运营|营销|定价|增长|用户体验)/, // product / business
+    /(文档|报告|总结|文案|翻译|撰写|说明书)/ // writing / docs
+  ];
+
+  function autoRoute(taskText, squad) {
+    const text = String(taskText || '').trim();
+    const lower = text.toLowerCase();
+    const agents = Array.isArray(squad)
+      ? squad
+      : (squad && Array.isArray(squad.agents) ? squad.agents : state.agents);
+    const enabledCount = (agents || []).filter((a) => a && a.enabled !== false).length;
+
+    let domains = 0;
+    for (const re of ROUTE_DOMAIN_PATTERNS) {
+      if (re.test(lower)) domains++;
+    }
+
+    const hasComplexKeyword = /(架构|设计|系统|方案|全案|审计|调研|对比|报告|实现|开发|构建|回测|策略|框架|完整|全面)/.test(lower);
+    const simpleLead = /^(什么是|为什么|怎么|如何|多少|谁|何时|哪里|哪个|算一下|计算|翻译|解释|介绍一下)/.test(text);
+
+    // 1) Very short / simple ask → fast lane (first core nodes are plenty).
+    if ((text.length <= 30 && !hasComplexKeyword) ||
+        (text.length <= 60 && domains === 0) ||
+        (simpleLead && domains <= 1 && text.length <= 80)) {
+      return 'fast';
+    }
+
+    // 2) Multiple independent sub-deliverables joined together → parallel fork.
+    //    (Forking needs at least 3 enabled nodes to have a middle layer.)
+    const joinerHits = (text.match(/、|\+|＋|以及|并且|同时|另外|分别/g) || []).length +
+      (text.match(/并(?=[\u4e00-\u9fa5])/g) || []).length;
+    const enumerated = /(^|\n)\s*[1-9][.、）)]/.test(text) || (/[；;]/.test(text) && text.length >= 40);
+    if (enabledCount >= 3 && domains >= 2 && (joinerHits >= 1 || enumerated || text.length >= 90)) {
+      return 'parallel_fork';
+    }
+
+    // 3) Safe default: full sequential Claw pipeline.
+    return 'auto_claw';
+  }
+
   /* ===== Context & Library Injection ===== */
   function buildLibraryContext(forAgentId) {
     let out = '';
@@ -573,6 +630,11 @@
       onToast('请至少启用 1 个智能体节点');
       return;
     }
+    // Smart routing: no manual mode picker anymore — unless a caller passes a
+    // valid mode explicitly, the engine chooses per task (see autoRoute).
+    if (!EXEC_MODES[mode]) {
+      mode = autoRoute(cleanTask, runList);
+    }
     if (mode === 'fast' && runList.length > 3) {
       runList = runList.slice(0, 3);
     }
@@ -601,6 +663,7 @@
 
     let allOk = false;
     try {
+      onLog('SMART_ROUTE', `智能路由 · ${EXEC_MODES[mode]}`, '#0071E3');
       await transport.prefetchMcpTools(onLog, signal);
 
       if (transport.kitesurfConfigured()) {
@@ -692,6 +755,7 @@
   function abortPipeline() {
     if (state.abortCtrl) state.abortCtrl.abort();
     state.isExecuting = false;
+    if (audio.sfx.scoreStop) audio.sfx.scoreStop();
   }
 
   /* ===== Report Builders ===== */
@@ -736,6 +800,8 @@
   Nexus.engine = {
     compressUpstreamOutput,
     autoRouteTask,
+    autoRoute,
+    EXEC_MODES,
     buildLibraryContext,
     buildAutoClawContext,
     resolveAttachMarkers,

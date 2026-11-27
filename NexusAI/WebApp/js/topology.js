@@ -631,13 +631,40 @@
     }
   }
 
-  function burstSlips() {
-    audio.sfx.parallelFork();
+  function spawnSlipWave() {
     agentPlanes.forEach((pl) => {
       const nextIdx = floatNewKeyword(pl);
       pl.spider.targetSlot = nextIdx;
       pl.spider.waitTicks = 0;
     });
+  }
+
+  function burstSlips() {
+    audio.sfx.parallelFork();
+    spawnSlipWave();
+  }
+
+  /* ===== Auto floating strips =====
+     No manual button anymore: while a pipeline run is active, fresh keyword
+     slips (sourced from live agent output via extractLiveKeywords) keep
+     drifting out on a steady cadence; spawning stops when the run ends. */
+  let autoSlipTimer = 0;
+  function syncAutoSlips() {
+    if (state.isExecuting) {
+      if (!autoSlipTimer) {
+        spawnSlipWave();
+        autoSlipTimer = setInterval(() => {
+          if (!state.isExecuting) {
+            syncAutoSlips();
+            return;
+          }
+          spawnSlipWave();
+        }, 2400);
+      }
+    } else if (autoSlipTimer) {
+      clearInterval(autoSlipTimer);
+      autoSlipTimer = 0;
+    }
   }
 
   function toggleImmersion() {
@@ -669,6 +696,9 @@
       if (document.hidden) stopLoop();
       else startLoop();
     });
+
+    // Watchdog: start/stop the auto floating-strip spawner with run state.
+    setInterval(syncAutoSlips, 900);
 
     if (typeof ResizeObserver !== 'undefined') {
       const wrap = document.getElementById('stageCanvasWrap');
