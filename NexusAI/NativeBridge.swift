@@ -255,7 +255,7 @@ final class NativeBridge {
             replyFail(replyHandler, "invalid_params")
             return
         }
-        ensureNotifyAccess { granted in
+        ensureNotifyAccess { [self] granted in
             guard granted else {
                 replyFail(replyHandler, "permission_denied")
                 return
@@ -267,7 +267,7 @@ final class NativeBridge {
             let trigger = UNTimeIntervalNotificationTrigger(timeInterval: delay, repeats: false)
             let request = UNNotificationRequest(
                 identifier: UUID().uuidString, content: content, trigger: trigger)
-            UNUserNotificationCenter.current().add(request) { error in
+            UNUserNotificationCenter.current().add(request) { [self] error in
                 if let error = error {
                     replyFail(replyHandler, error.localizedDescription)
                 } else {
