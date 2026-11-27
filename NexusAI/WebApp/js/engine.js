@@ -217,6 +217,12 @@
         toolLines.push(`- ${sv.name} / ${t.name}：${t.description || ''}`);
       });
     });
+    // 本机能力（原生桥伪服务器，运行时注入，不落盘）：全员可用。
+    if (Nexus.native && Nexus.native.available) {
+      (state.mcpToolIndex[Nexus.native.SERVER_NAME] || []).forEach((t) => {
+        toolLines.push(`- ${Nexus.native.SERVER_NAME} / ${t.name}：${t.description || ''}`);
+      });
+    }
     if (toolLines.length) {
       out += `\n${LB}MCP 工具${RB}需要调用外部工具时，在产出中单独一行写 [[MCP:服务器名:工具名:{"参数名":值}]]，系统会执行并把结果替换到标记处。可用工具：\n${toolLines.join('\n')}\n`;
     }
@@ -363,7 +369,10 @@
       const parts = head.split(':');
       const serverName = (parts[0] || '').trim();
       const toolName = (parts[1] || '').trim();
-      const sv = state.mcpServers.find((s) => s.name === serverName);
+      const sv = state.mcpServers.find((s) => s.name === serverName) ||
+        (Nexus.native && Nexus.native.available && serverName === Nexus.native.SERVER_NAME
+          ? { name: Nexus.native.SERVER_NAME, local: true, enabled: true, agents: ['all'] }
+          : null);
 
       if (!sv || sv.enabled === false) {
         replacement = `（未配置已启用的 MCP 服务器「${serverName}」，已跳过）`;
@@ -450,7 +459,7 @@
       } catch (firstErr) {
         if (firstErr && firstErr.name === 'AbortError') throw firstErr;
         audio.sfx.autoHealRetry();
-        onLog('AUTO_HEAL', `触发 Claw 自动恢复配方：正在重试 ${ag.shortName}...`, '#FFB800');
+        onLog('AUTO_HEAL', `触发 Claw 自动恢复配方：正在重试 ${ag.shortName}...`, '#FF9F0A');
         res = await transport.requestLLM({ systemPrompt: ag.systemPrompt, userPrompt: promptForAgent, signal, onStreamUpdate: handleStream });
       }
 
@@ -490,7 +499,7 @@
           } catch (loopErr) {
             if (loopErr && loopErr.name === 'AbortError') throw loopErr;
             ag.output = prevToolOutput;
-            onLog('TOOL_LOOP', `${ag.name} 工具循环续写失败，保留上一版产出：${loopErr.message}`, '#FFB800');
+            onLog('TOOL_LOOP', `${ag.name} 工具循环续写失败，保留上一版产出：${loopErr.message}`, '#FF9F0A');
             break;
           }
         }
@@ -514,8 +523,8 @@
       }
 
       audio.sfx.nodeCompleteAndCompact();
-      store.spawnPacket(ag.id, hubId, '#00FFA3');
-      onLog(res.cachedHit ? 'FNV_HIT' : 'DONE', `${ag.name} 完成 (${(ag.latencyMs / 1000).toFixed(1)}s · ${ag.tokens} tok)`, '#00FFA3');
+      store.spawnPacket(ag.id, hubId, '#34C759');
+      onLog(res.cachedHit ? 'FNV_HIT' : 'DONE', `${ag.name} 完成 (${(ag.latencyMs / 1000).toFixed(1)}s · ${ag.tokens} tok)`, '#34C759');
       onUpdate(ag);
       return true;
     } catch (err) {
@@ -523,12 +532,12 @@
       if (err && err.name === 'AbortError') {
         ag.status = 'idle';
         audio.sfx.errorOrAbort();
-        onLog('ABORT', `已手动中止 ${ag.name}`, '#FFB800');
+        onLog('ABORT', `已手动中止 ${ag.name}`, '#FF9F0A');
       } else {
         ag.status = 'error';
         ag.output = `【API 调用失败】：${err.message}`;
         audio.sfx.errorOrAbort();
-        onLog('ERROR', `${ag.name} 报错：${err.message}`, '#FF3864');
+        onLog('ERROR', `${ag.name} 报错：${err.message}`, '#FF3B30');
         if (onToast) onToast(`调用失败：${err.message}`);
       }
       onUpdate(ag);
@@ -548,7 +557,7 @@
     const { routes, blocked } = autoRouteTask(cleanTask);
     if (blocked) {
       audio.sfx.errorOrAbort();
-      onLog('SANDBOX', 'Claw 安全沙箱已自动拦截高危系统指令', '#FF3864');
+      onLog('SANDBOX', 'Claw 安全沙箱已自动拦截高危系统指令', '#FF3B30');
       onToast('安全沙箱拦截：检测到破坏性指令');
       return;
     }
@@ -603,21 +612,21 @@
             if (page) {
               state.prefetchedPages.push({ url: u, text: page });
               store.recordEvidence('FETCH', u, page);
-              onLog('KITESURF', `已抓取任务页面：${u}（${page.length} 字）`, '#00F0FF');
+              onLog('KITESURF', `已抓取任务页面：${u}（${page.length} 字）`, '#0071E3');
             }
           } catch (e) {
             if (e && e.name === 'AbortError') throw e;
-            onLog('KITESURF', `抓取 ${u} 失败：${e.message}（已跳过，不影响运行）`, '#FFB800');
+            onLog('KITESURF', `抓取 ${u} 失败：${e.message}（已跳过，不影响运行）`, '#FF9F0A');
           }
         }
       } else if (util.extractUrls(cleanTask).length) {
-        onLog('KITESURF', '任务含网址但未配置 Cloudflare 凭证，智能体将看不到页面内容（可在 API设置 中填入）', '#FFB800');
+        onLog('KITESURF', '任务含网址但未配置 Cloudflare 凭证，智能体将看不到页面内容（可在 API设置 中填入）', '#FF9F0A');
       }
 
       if (!state.isExecuting || signal.aborted) return;
 
       audio.sfx.missionLaunch();
-      onLog('CLAW_AUTO', `已挂载 [${routes.join(' + ')}] 路由与 Trident 省Token引擎 v3`, '#00F0FF');
+      onLog('CLAW_AUTO', `已挂载 [${routes.join(' + ')}] 路由与 Trident 省Token引擎 v3`, '#0071E3');
 
       const hubId = runList[0].id;
       state.pipelineFinalAgentId = runList[runList.length - 1].id;
@@ -631,7 +640,7 @@
           const middleAgents = runList.slice(1, runList.length - 1);
           const finalAgent = runList[runList.length - 1];
           audio.sfx.parallelFork();
-          onLog('FORK', `自动并发调度子智能体：${middleAgents.map((a) => a.shortName).join(' + ')}`, '#9D4EDD');
+          onLog('FORK', `自动并发调度子智能体：${middleAgents.map((a) => a.shortName).join(' + ')}`, '#5E5CE6');
 
           await Promise.all(
             middleAgents.map((ag) => {

@@ -16,7 +16,7 @@ struct ContentView: View {
 
     var body: some View {
         ZStack {
-            Color(red: 0.04, green: 0.05, blue: 0.08)
+            Color(red: 0.949, green: 0.949, blue: 0.969)
                 .ignoresSafeArea()
 
             WebView(isLoading: $isLoading, loadError: $loadError, reloadToken: reloadToken)
@@ -25,7 +25,7 @@ struct ContentView: View {
             if isLoading {
                 ProgressView()
                     .progressViewStyle(.circular)
-                    .tint(.white)
+                    .tint(Color(red: 0.0, green: 0.443, blue: 0.890))
                     .scaleEffect(1.5)
             }
 
@@ -36,7 +36,7 @@ struct ContentView: View {
                         .foregroundColor(.orange)
                     Text("载入失败")
                         .font(.headline)
-                        .foregroundColor(.white)
+                        .foregroundColor(Color(red: 0.114, green: 0.114, blue: 0.122))
                     Text(message)
                         .font(.footnote)
                         .foregroundColor(.gray)
@@ -50,6 +50,6 @@ struct ContentView: View {
                 }
             }
         }
-        .preferredColorScheme(.dark)
+        .preferredColorScheme(.light)
     }
 }

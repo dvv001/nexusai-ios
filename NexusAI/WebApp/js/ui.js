@@ -64,7 +64,7 @@
     const time = new Date().toTimeString().slice(0, 8);
     const item = document.createElement('div');
     item.className = 'log-entry safe-wrap';
-    item.style.borderLeftColor = color || '#00F0FF';
+    item.style.borderLeftColor = color || '#0071E3';
     item.innerHTML = `<span class="log-tag">[${time}] ${util.escHtml(tag)}</span> ${util.escHtml(text)}`;
     box.prepend(item);
   }
@@ -641,7 +641,7 @@
             name,
             agents: [{
               id: 'agent-1', code: 'A-01', name: '新成员-01', shortName: '成员',
-              role: '待配置角色', icon: '🤖', color: '#00F0FF',
+              role: '待配置角色', icon: '🤖', color: '#0071E3',
               systemPrompt: '（待配置）请把这里改成这个成员的角色、方法与输出格式。', enabled: true
             }]
           };
@@ -787,12 +787,12 @@
         });
         banner.className = 'test-banner ok safe-wrap';
         banner.textContent = `✔ 连通成功！耗时 ${res.latencyMs}ms · 消耗 ${res.tokens} tokens\n回复：${res.content}`;
-        appendLog('API_TEST', `连通性测试通过 (${res.latencyMs}ms)`, '#00FFA3');
+        appendLog('API_TEST', `连通性测试通过 (${res.latencyMs}ms)`, '#34C759');
         showToast('API 连通测试成功！');
       } catch (err) {
         banner.className = 'test-banner err safe-wrap';
         banner.textContent = `✕ 连接失败：${err.message}`;
-        appendLog('API_ERR', `连通测试失败：${err.message}`, '#FF3864');
+        appendLog('API_ERR', `连通测试失败：${err.message}`, '#FF3B30');
       }
     });
 

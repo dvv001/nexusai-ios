@@ -334,7 +334,25 @@
     } catch (_) {}
   }
 
+  /* ===== 本机能力：原生桥伪 MCP 服务器（不走网络） ===== */
+  async function localMcpRequest(method, params) {
+    const native = Nexus.native;
+    if (!native || !native.available) throw new Error('本机能力不可用（原生桥未注入）');
+    if (method === 'tools/list') {
+      return {
+        tools: native.TOOLS.map((t) => ({ name: t.name, description: t.description, inputSchema: t.inputSchema }))
+      };
+    }
+    if (method === 'tools/call') {
+      const data = await native.callTool(params && params.name, (params && params.arguments) || {});
+      const text = typeof data === 'string' ? data : JSON.stringify(data, null, 2);
+      return { content: [{ type: 'text', text }] };
+    }
+    throw new Error(`本机能力不支持的方法：${method}`);
+  }
+
   async function mcpRequest(server, method, params, signal, allowRetry = true) {
+    if (server && server.local) return localMcpRequest(method, params);
     if (!(server.name in state.mcpSessions)) {
       await mcpInitSession(server, signal);
     }
@@ -372,11 +390,27 @@
           name: t.name,
           description: String(t.description || '').replace(/\s+/g, ' ').slice(0, 120)
         }));
-        if (onLog) onLog('MCP', `服务器「${sv.name}」已连接，${tools.length} 个工具可用`, '#00F0FF');
+        if (onLog) onLog('MCP', `服务器「${sv.name}」已连接，${tools.length} 个工具可用`, '#0071E3');
       } catch (e) {
         if (e && e.name === 'AbortError') throw e;
         state.mcpToolIndex[sv.name] = [];
-        if (onLog) onLog('MCP', `服务器「${sv.name}」连接失败：${e.message}（已跳过，不影响运行）`, '#FFB800');
+        if (onLog) onLog('MCP', `服务器「${sv.name}」连接失败：${e.message}（已跳过，不影响运行）`, '#FF9F0A');
+      }
+    }
+
+    // 本机能力（原生桥伪服务器）：仅内置 App 存在，运行时注入索引，不落盘。
+    if (Nexus.native && Nexus.native.available) {
+      const nativeName = Nexus.native.SERVER_NAME;
+      try {
+        const result = await mcpRequest({ name: nativeName, local: true }, 'tools/list', {}, signal);
+        const tools = (result && result.tools) || [];
+        state.mcpToolIndex[nativeName] = tools.map((t) => ({
+          name: t.name,
+          description: String(t.description || '').replace(/\s+/g, ' ').slice(0, 120)
+        }));
+        if (onLog) onLog('MCP', `服务器「${nativeName}」已连接，${tools.length} 个工具可用`, '#0071E3');
+      } catch (e) {
+        state.mcpToolIndex[nativeName] = [];
       }
     }
   }

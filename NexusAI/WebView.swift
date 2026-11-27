@@ -27,6 +27,7 @@ struct WebView: UIViewRepresentable {
         config.defaultWebpagePreferences = prefs
         config.userContentController.add(context.coordinator, name: "blobDownload")
         config.userContentController.addScriptMessageHandler(context.coordinator, contentWorld: .page, name: "nativeBrowse")
+        config.userContentController.addScriptMessageHandler(context.coordinator, contentWorld: .page, name: "nativeBridge")
         let script = WKUserScript(source: Coordinator.blobBridgeJS,
                                   injectionTime: .atDocumentEnd,
                                   forMainFrameOnly: false)
@@ -38,7 +39,7 @@ struct WebView: UIViewRepresentable {
         webView.allowsBackForwardNavigationGestures = true
         webView.scrollView.bounces = false
         webView.isOpaque = false
-        webView.backgroundColor = UIColor(red: 0.04, green: 0.05, blue: 0.08, alpha: 1)
+        webView.backgroundColor = UIColor(red: 0.949, green: 0.949, blue: 0.969, alpha: 1)
         context.coordinator.webView = webView
         context.coordinator.lastReloadToken = reloadToken
         webView.load(URLRequest(url: BundleSchemeHandler.startURL))
@@ -58,6 +59,7 @@ struct WebView: UIViewRepresentable {
         weak var webView: WKWebView?
         var lastReloadToken = 0
         private var pendingDownloadURL: URL?
+        private let nativeBridge = NativeBridge()
 
         init(isLoading: Binding<Bool>, loadError: Binding<String?>) {
             _isLoading = isLoading
@@ -181,6 +183,15 @@ struct WebView: UIViewRepresentable {
         func userContentController(_ userContentController: WKUserContentController,
                                    didReceive message: WKScriptMessage,
                                    replyHandler: @escaping (Any?, String?) -> Void) {
+            // 本机能力桥（日历/提醒/通知/朗读）：转交 NativeBridge 按固定契约处理。
+            if message.name == "nativeBridge" {
+                guard let body = message.body as? [String: Any] else {
+                    replyHandler(nil, "invalid native bridge payload")
+                    return
+                }
+                nativeBridge.handle(body: body, replyHandler: replyHandler)
+                return
+            }
             guard message.name == "nativeBrowse",
                   let body = message.body as? [String: Any],
                   let accountId = body["accountId"] as? String,

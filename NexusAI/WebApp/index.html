@@ -5,10 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>NexusAI — 量子多智能体协同中枢</title>
   <link rel="manifest" href="manifest.webmanifest">
-  <meta name="theme-color" content="#050314">
+  <meta name="theme-color" content="#F5F5F7">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="NexusAI">
   <link rel="apple-touch-icon" sizes="180x180" href="icon-180.png">
   <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
@@ -223,6 +223,8 @@
             <label class="field-label" for="cfgCfToken">Cloudflare API Token（Browser Rendering 权限）</label>
             <input id="cfgCfToken" type="password" class="field-input mono" placeholder="仅存本机浏览器，勿外传">
           </div>
+
+          <p id="nativeBridgeStatus" class="panel-subtitle"></p>
 
           <div class="row" style="padding-top: 4px;">
             <button id="saveCfgBtn" type="button" class="btn btn-primary btn-block">💾 保存配置</button>
@@ -460,6 +462,7 @@
   <script src="js/store.js"></script>
   <script src="js/audio.js"></script>
   <script src="js/transport.js"></script>
+  <script src="js/native.js"></script>
   <script src="js/engine.js"></script>
   <script src="js/topology.js"></script>
   <script src="js/ui.js"></script>
@@ -489,7 +492,7 @@
         document.getElementById('wsSquadName').textContent = sq.name || '未命名编队';
         document.getElementById('wsSquadCount').textContent = agents.length + ' 个智能体';
         document.getElementById('wsSquadAvatars').innerHTML = agents.slice(0, 8).map(function (ag) {
-          var col = /^#[0-9a-fA-F]{3,8}$/.test(ag.color || '') ? ag.color : '#00F0FF';
+          var col = /^#[0-9a-fA-F]{3,8}$/.test(ag.color || '') ? ag.color : '#0071E3';
           return '<span class="ws-avatar" style="background:' + col + '22;border:1px solid ' + col + '66" title="' + esc(ag.name || '') + '">' + esc(ag.icon || '🤖') + '</span>';
         }).join('');
         card.style.display = '';

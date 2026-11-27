@@ -90,7 +90,7 @@
         detailBtnRect: { x: 0, y: 0, w: 44, h: 20 },
         slips,
         webChain: [0, 1],
-        spider: createSpider(ag.color || '#00F0FF')
+        spider: createSpider(ag.color || '#0071E3')
       };
     });
     layoutPlanes();
@@ -222,9 +222,9 @@
         const kneeX = midX + side * 4;
         const kneeY = midY - 6.5;
 
-        ctx.strokeStyle = '#FFFFFF';
+        ctx.strokeStyle = color;
         ctx.shadowColor = color;
-        ctx.shadowBlur = 7;
+        ctx.shadowBlur = 0;
         ctx.lineWidth = 1.45;
         ctx.beginPath();
         ctx.moveTo(shX, shY);
@@ -237,7 +237,7 @@
         ctx.arc(kneeX, kneeY, 1.5, 0, Math.PI * 2);
         ctx.fill();
 
-        ctx.fillStyle = isStepping ? '#FFB800' : color;
+        ctx.fillStyle = isStepping ? '#FF9F0A' : color;
         ctx.beginPath();
         ctx.arc(footX, footY, 1.9, 0, Math.PI * 2);
         ctx.fill();
@@ -246,10 +246,10 @@
 
     ctx.translate(cx, cy);
     ctx.rotate(angle);
-    ctx.fillStyle = '#0B0624';
+    ctx.fillStyle = '#FFFFFF';
     ctx.strokeStyle = color;
     ctx.shadowColor = color;
-    ctx.shadowBlur = 12;
+    ctx.shadowBlur = 0;
     ctx.lineWidth = 1.6;
     ctx.beginPath();
     ctx.ellipse(-4, 0, 5.8, 4.1, 0, 0, Math.PI * 2);
@@ -299,9 +299,9 @@
       ctx.stroke();
 
       ctx.globalAlpha = 1;
-      ctx.fillStyle = '#FFFFFF';
+      ctx.fillStyle = pkt.color;
       ctx.shadowColor = pkt.color;
-      ctx.shadowBlur = 14;
+      ctx.shadowBlur = 0;
       ctx.beginPath();
       ctx.arc(px, py, 3.6, 0, Math.PI * 2);
       ctx.fill();
@@ -322,8 +322,8 @@
       enabledNow.some((ag, i) => !agentPlanes[i] || agentPlanes[i].agent !== ag);
     if (mismatch && enabledNow.length > 0) rebuildPlanes();
 
-    // Cosmic void backdrop
-    ctx.fillStyle = '#03020E';
+    // Light stage backdrop
+    ctx.fillStyle = '#FFFFFF';
     ctx.fillRect(0, 0, cw, ch);
 
     agentPlanes.forEach((plane, pIdx) => {
@@ -331,18 +331,18 @@
       const ag = plane.agent;
       const isRunning = ag.status === 'running';
       const isDone = ag.status === 'done';
-      const themeColor = ag.color || '#00F0FF';
+      const themeColor = ag.color || '#0071E3';
 
       ctx.save();
       const bgGrad = ctx.createLinearGradient(x, y, x + w, y + h);
-      bgGrad.addColorStop(0, isRunning ? `${themeColor}2A` : '#110B30');
-      bgGrad.addColorStop(1, '#060418');
+      bgGrad.addColorStop(0, isRunning ? `${themeColor}2A` : '#FFFFFF');
+      bgGrad.addColorStop(1, '#F5F5F7');
       ctx.fillStyle = bgGrad;
       ctx.strokeStyle = isRunning ? themeColor : `${themeColor}77`;
       ctx.lineWidth = isRunning ? 2.1 : 1.15;
       if (isRunning) {
         ctx.shadowColor = themeColor;
-        ctx.shadowBlur = 12;
+        ctx.shadowBlur = 0;
       }
       drawRoundedRect(x, y, w, h, 10);
       ctx.fill();
@@ -367,7 +367,7 @@
 
       // Plane Header Bar
       const hdrH = 25;
-      ctx.fillStyle = 'rgba(9, 6, 30, 0.92)';
+      ctx.fillStyle = 'rgba(245, 245, 247, 0.95)';
       ctx.fillRect(x + 1, y + 1, w - 2, hdrH);
       ctx.strokeStyle = `${themeColor}55`;
       ctx.beginPath();
@@ -387,21 +387,21 @@
       ctx.rect(x + 5, y + 1, Math.max(20, btnX - x - 9), hdrH - 2);
       ctx.clip();
       ctx.font = '700 10.5px -apple-system, Inter, sans-serif';
-      ctx.fillStyle = '#F4F7FF';
+      ctx.fillStyle = '#1D1D1F';
       ctx.textAlign = 'left';
       ctx.textBaseline = 'middle';
       ctx.fillText(`${ag.icon} ${ag.name}`, x + 7, y + hdrH * 0.52);
       ctx.restore();
 
       // Detail / Status button
-      ctx.fillStyle = isRunning ? themeColor : isDone ? 'rgba(0, 255, 163, 0.18)' : 'rgba(22, 16, 56, 0.92)';
-      ctx.strokeStyle = isDone ? '#00FFA3' : themeColor;
+      ctx.fillStyle = isRunning ? themeColor : isDone ? 'rgba(52, 199, 89, 0.15)' : '#EFEFF4';
+      ctx.strokeStyle = isDone ? '#34C759' : themeColor;
       ctx.lineWidth = 0.9;
       drawRoundedRect(btnX, btnY, btnW, btnH, 5);
       ctx.fill();
       ctx.stroke();
       ctx.font = '700 9px -apple-system, Inter, sans-serif';
-      ctx.fillStyle = isRunning ? '#050314' : isDone ? '#00FFA3' : '#E2E8F0';
+      ctx.fillStyle = isRunning ? '#FFFFFF' : isDone ? '#248A3D' : '#3A3A3C';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       ctx.fillText(isRunning ? '执行中' : isDone ? '✔完成' : '详情 ›', btnX + btnW * 0.5, btnY + btnH * 0.52);
@@ -439,8 +439,8 @@
 
           ctx.setLineDash([3, 5]);
           ctx.lineDashOffset = -tick * 0.9;
-          ctx.strokeStyle = '#FFFFFF';
-          ctx.globalAlpha = 0.8;
+          ctx.strokeStyle = themeColor;
+          ctx.globalAlpha = 0.35;
           ctx.lineWidth = 0.85;
           ctx.stroke();
           ctx.setLineDash([]);
@@ -488,29 +488,29 @@
         if (isAct) {
           ctx.fillStyle = themeColor;
           ctx.shadowColor = themeColor;
-          ctx.shadowBlur = 16;
+          ctx.shadowBlur = 0;
           ctx.fill();
-          ctx.strokeStyle = '#FFFFFF';
+          ctx.strokeStyle = 'rgba(60, 60, 67, 0.18)';
           ctx.lineWidth = 1.5;
           ctx.stroke();
         } else if (isStep) {
           ctx.fillStyle = `${themeColor}3A`;
           ctx.shadowColor = themeColor;
-          ctx.shadowBlur = 7;
+          ctx.shadowBlur = 0;
           ctx.fill();
           ctx.strokeStyle = themeColor;
           ctx.lineWidth = 1.2;
           ctx.stroke();
         } else {
-          ctx.fillStyle = 'rgba(14, 10, 40, 0.86)';
+          ctx.fillStyle = '#FFFFFF';
           ctx.fill();
-          ctx.strokeStyle = 'rgba(130, 150, 255, 0.4)';
+          ctx.strokeStyle = 'rgba(60, 60, 67, 0.28)';
           ctx.lineWidth = 0.85;
           ctx.stroke();
         }
 
         ctx.shadowBlur = 0;
-        ctx.fillStyle = isAct ? '#050314' : isStep ? '#FFFFFF' : '#A5B4D4';
+        ctx.fillStyle = isAct ? '#FFFFFF' : isStep ? '#1D1D1F' : '#6E6E73';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.fillText(slip.text, 0, 0.5, bw - 8);
