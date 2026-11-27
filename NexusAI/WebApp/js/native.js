@@ -67,7 +67,7 @@
     },
     {
       name: 'speak_say', api: 'speak', action: 'say',
-      description: '用本机语音朗读一段文字（默认中文）',
+      description: '用本机语音朗读一段文字（默认中文）。text 必须是要朗读的全文原样，禁止填占位语',
       inputSchema: {
         type: 'object',
         properties: {
@@ -94,7 +94,18 @@
   async function callTool(name, args) {
     const tool = TOOLS.find((t) => t.name === name);
     if (!tool) throw new Error(`本机工具不存在：${name}`);
-    return call(tool.api, tool.action, args || {});
+    args = args || {};
+    if (name === 'speak_say') {
+      // Models sometimes pass a template placeholder (e.g. 此处填入播报全文)
+      // instead of the composed text, and the synthesizer then reads the
+      // placeholder aloud (seen on-device 2026-11-28). Reject it here so
+      // the model retries with the full text in the same turn.
+      const t = String(args.text || '').trim();
+      if (t.length < 10 || /此处填入|占位符|placeholder|待填写|待补充/i.test(t)) {
+        throw new Error('speak_say 的 text 参数无效：你传入的是占位语或过短文本。必须把要朗读的全文原样放进 text 参数，然后重新调用 speak_say。');
+      }
+    }
+    return call(tool.api, tool.action, args);
   }
 
   Nexus.native = {
