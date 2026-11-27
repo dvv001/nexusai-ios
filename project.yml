@@ -11,7 +11,8 @@ targets:
     type: application
     platform: iOS
     sources:
-      - NexusAI
+      - path: NexusAI
+        type: folder
     info:
       path: NexusAI/Info.plist
       properties:
@@ -28,5 +29,5 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: com.example.nexusai
         TARGETED_DEVICE_FAMILY: "1"
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
-        MARKETING_VERSION: "1.0"
-        CURRENT_PROJECT_VERSION: "1"
+        MARKETING_VERSION: "1.1"
+        CURRENT_PROJECT_VERSION: "2"

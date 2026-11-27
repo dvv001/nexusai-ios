@@ -14,14 +14,12 @@ struct ContentView: View {
     @State private var loadError: String?
     @State private var reloadToken = 0
 
-    private let homeURL = URL(string: "https://dvv001.github.io/hghub1/nexus/")!
-
     var body: some View {
         ZStack {
             Color(red: 0.04, green: 0.05, blue: 0.08)
                 .ignoresSafeArea()
 
-            WebView(url: homeURL, isLoading: $isLoading, loadError: $loadError, reloadToken: reloadToken)
+            WebView(isLoading: $isLoading, loadError: $loadError, reloadToken: reloadToken)
                 .ignoresSafeArea()
 
             if isLoading {
@@ -33,7 +31,7 @@ struct ContentView: View {
 
             if let message = loadError {
                 VStack(spacing: 14) {
-                    Image(systemName: "wifi.exclamationmark")
+                    Image(systemName: "exclamationmark.triangle")
                         .font(.system(size: 40))
                         .foregroundColor(.orange)
                     Text("载入失败")

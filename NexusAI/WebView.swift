@@ -2,12 +2,13 @@ import SwiftUI
 import WebKit
 
 /// Full-screen WKWebView shell for the NexusAI web app.
+/// - The web app ships inside the bundle (WebApp/) and is served locally
+///   via BundleSchemeHandler at app://localhost: no web hosting needed.
 /// - Persistent data store: localStorage (squads, API key) survives relaunches.
 /// - Blob downloads (config export) are bridged to native and offered via share sheet.
 /// - Non-displayable navigation responses become WKDownloads, also share-sheeted.
 /// - JS alert/confirm/prompt panels are presented natively.
 struct WebView: UIViewRepresentable {
-    let url: URL
     @Binding var isLoading: Bool
     @Binding var loadError: String?
     var reloadToken: Int = 0
@@ -19,6 +20,7 @@ struct WebView: UIViewRepresentable {
     func makeUIView(context: Context) -> WKWebView {
         let config = WKWebViewConfiguration()
         config.websiteDataStore = WKWebsiteDataStore.default()
+        config.setURLSchemeHandler(BundleSchemeHandler(), forURLScheme: BundleSchemeHandler.scheme)
         config.allowsInlineMediaPlayback = true
         let prefs = WKWebpagePreferences()
         prefs.allowsContentJavaScript = true
@@ -38,7 +40,7 @@ struct WebView: UIViewRepresentable {
         webView.backgroundColor = UIColor(red: 0.04, green: 0.05, blue: 0.08, alpha: 1)
         context.coordinator.webView = webView
         context.coordinator.lastReloadToken = reloadToken
-        webView.load(URLRequest(url: url))
+        webView.load(URLRequest(url: BundleSchemeHandler.startURL))
         return webView
     }
 
