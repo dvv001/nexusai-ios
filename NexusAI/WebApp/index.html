@@ -230,7 +230,7 @@
           <div class="card stack-sm">
             <input id="libMcpName" type="text" class="field-input" placeholder="服务器名（智能体用 [[MCP:服务器名:工具名:{参数}]] 调用）">
             <input id="libMcpUrl" type="text" class="field-input mono" placeholder="服务器地址（https://...，Streamable HTTP 类 MCP）">
-            <input id="libMcpToken" type="password" class="field-input mono" placeholder="访问令牌（可选，仅存本机浏览器）">
+            <input id="libMcpToken" type="password" class="field-input mono" placeholder="访问令牌（可选，仅存本机）">
             <div class="field-group">
               <span class="field-label">分配给</span>
               <div id="libMcpAgents" class="row-wrap"></div>
@@ -241,7 +241,7 @@
               <button id="libMcpTestBtn" type="button" class="btn btn-ghost btn-block">测试连接</button>
               <button id="libMcpCancelBtn" type="button" class="btn btn-muted btn-sm hidden">取消</button>
             </div>
-            <p class="panel-subtitle">直连目标服务器（Streamable HTTP）；本机 stdio 型 MCP 网页端无法直连。</p>
+            <p class="panel-subtitle">应用直连目标服务器（Streamable HTTP）；本机 stdio 型 MCP 无法直连。</p>
             <p id="libMcpMsg" class="panel-subtitle safe-wrap"></p>
           </div>
         </div>
