@@ -966,6 +966,7 @@
       msg.textContent = '正在导入…';
       try {
         const n = await transport.importSkillFromUrl(url);
+        $('libSkillImportUrl').value = '';
         msg.textContent = '已导入技能：' + n;
         renderLibrary();
       } catch (err) {
@@ -980,6 +981,7 @@
       msg.textContent = '正在扫描仓库并批量导入…';
       try {
         const n = await transport.importSkillsFromRepo(url);
+        $('libRepoUrl').value = '';
         msg.textContent = `已从仓库导入 ${n} 个技能`;
         renderLibrary();
       } catch (err) {
@@ -1058,6 +1060,9 @@
     $('libIoDoImportBtn').addEventListener('click', () => {
       try {
         const res = store.importLibraryJson($('libIoText').value);
+        // Clear the pasted JSON on success so stale config doesn't linger
+        // in the box (export output is intentionally left for copying).
+        $('libIoText').value = '';
         clearLibForm('skill');
         clearLibForm('mcp');
         clearLibForm('inst');
