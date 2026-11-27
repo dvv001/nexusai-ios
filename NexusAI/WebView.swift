@@ -26,6 +26,7 @@ struct WebView: UIViewRepresentable {
         prefs.allowsContentJavaScript = true
         config.defaultWebpagePreferences = prefs
         config.userContentController.add(context.coordinator, name: "blobDownload")
+        config.userContentController.addScriptMessageHandler(context.coordinator, contentWorld: .page, name: "nativeBrowse")
         let script = WKUserScript(source: Coordinator.blobBridgeJS,
                                   injectionTime: .atDocumentEnd,
                                   forMainFrameOnly: false)
@@ -51,7 +52,7 @@ struct WebView: UIViewRepresentable {
         }
     }
 
-    final class Coordinator: NSObject, WKNavigationDelegate, WKUIDelegate, WKScriptMessageHandler, WKDownloadDelegate {
+    final class Coordinator: NSObject, WKNavigationDelegate, WKUIDelegate, WKScriptMessageHandler, WKScriptMessageHandlerWithReply, WKDownloadDelegate {
         @Binding var isLoading: Bool
         @Binding var loadError: String?
         weak var webView: WKWebView?
@@ -168,6 +169,47 @@ struct WebView: UIViewRepresentable {
             } catch {
                 // Saving failed; nothing sensible to surface in the shell.
             }
+        }
+
+        // MARK: - Native browse bridge
+
+        /// The bundled web app calls this instead of the Cloudflare Worker relay:
+        /// native URLSession has no CORS limits, so the shell can call the
+        /// Cloudflare Browser Rendering API directly with the user's own
+        /// credentials (passed per-call, never stored natively) and hand the
+        /// JSON response back to the page.
+        func userContentController(_ userContentController: WKUserContentController,
+                                   didReceive message: WKScriptMessage,
+                                   replyHandler: @escaping (Any?, String?) -> Void) {
+            guard message.name == "nativeBrowse",
+                  let body = message.body as? [String: Any],
+                  let accountId = body["accountId"] as? String,
+                  let token = body["token"] as? String,
+                  let pageURL = body["url"] as? String,
+                  accountId.range(of: "^[A-Za-z0-9]{16,64}$", options: .regularExpression) != nil,
+                  pageURL.hasPrefix("http"),
+                  let cfURL = URL(string: "https://api.cloudflare.com/client/v4/accounts/\(accountId)/browser-run/markdown?browser=kitesurf") else {
+                replyHandler(nil, "invalid browse payload")
+                return
+            }
+            var request = URLRequest(url: cfURL)
+            request.httpMethod = "POST"
+            request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+            request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+            request.httpBody = try? JSONSerialization.data(withJSONObject: ["url": pageURL])
+            request.timeoutInterval = 60
+            URLSession.shared.dataTask(with: request) { data, _, error in
+                if let error = error {
+                    replyHandler(nil, "native browse failed: \(error.localizedDescription)")
+                    return
+                }
+                guard let data = data,
+                      let object = try? JSONSerialization.jsonObject(with: data) else {
+                    replyHandler(nil, "native browse failed: unreadable response")
+                    return
+                }
+                replyHandler(object, nil)
+            }.resume()
         }
 
         // MARK: - JS panels (WKUIDelegate)

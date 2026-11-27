@@ -230,19 +230,34 @@
     if (state.kitesurfFetchCount >= CONST.KITESURF_RUN_FETCH_LIMIT) return null;
     state.kitesurfFetchCount++;
     try {
-      const resp = await fetch(CONST.BROWSE_RELAY_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+      let data = null;
+      const nativeBrowse = window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.nativeBrowse;
+      if (nativeBrowse) {
+        // 内置版：原生桥直连 Cloudflare Browser Rendering 接口，不再经 Worker 中转。
+        data = await nativeBrowse.postMessage({
           accountId: state.api.cfAccountId.trim(),
           token: state.api.cfToken.trim(),
           url
-        }),
-        signal
-      });
-      const data = await resp.json().catch(() => null);
-      if (!resp.ok || !data || data.success === false) {
-        const msg = (data && data.errors && data.errors[0] && data.errors[0].message) || ('HTTP ' + resp.status);
+        }).catch((err) => { throw new Error((err && err.message) || String(err || 'native browse failed')); });
+      } else {
+        const resp = await fetch(CONST.BROWSE_RELAY_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            accountId: state.api.cfAccountId.trim(),
+            token: state.api.cfToken.trim(),
+            url
+          }),
+          signal
+        });
+        data = await resp.json().catch(() => null);
+        if (!resp.ok) {
+          const emsg = (data && data.errors && data.errors[0] && data.errors[0].message) || ('HTTP ' + resp.status);
+          throw new Error(emsg);
+        }
+      }
+      if (!data || data.success === false) {
+        const msg = (data && data.errors && data.errors[0] && data.errors[0].message) || '抓取无响应';
         throw new Error(msg);
       }
       let text = '';
@@ -279,19 +294,23 @@
   }
 
   async function mcpRelayCall(server, rpcPayload, sessionId, signal) {
-    const headers = {};
+    // 内置版：直连目标 MCP 服务器，不再经 Worker 中转（服务器跨域开放且暴露 Mcp-Session-Id 头）。
+    const headers = { 'Content-Type': 'application/json', 'Accept': 'application/json, text/event-stream' };
     if (server.token) headers['Authorization'] = 'Bearer ' + server.token;
     if (sessionId) headers['Mcp-Session-Id'] = sessionId;
-    const resp = await fetch(CONST.MCP_RELAY_URL, {
+    const resp = await fetch(server.url, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ url: server.url, headers, body: rpcPayload }),
+      headers,
+      body: JSON.stringify(rpcPayload),
       signal
     });
-    const data = await resp.json().catch(() => null);
-    if (!data) throw new Error(`MCP 中转无响应（HTTP ${resp.status}），请确认已部署含 /mcp 的 Worker`);
-    if (data.error) throw new Error(data.error);
-    return data;
+    const text = await resp.text().catch(() => '');
+    return {
+      status: resp.status,
+      contentType: resp.headers.get('content-type') || '',
+      sessionId: resp.headers.get('mcp-session-id') || '',
+      body: text
+    };
   }
 
   async function mcpInitSession(server, signal) {
